@@ -1,0 +1,25 @@
+# Rust
+/target
+
+# Node
+node_modules
+plugin/node_modules
+dist
+plugin/dist
+coverage
+
+# Generated outputs
+tmp
+out
+artifacts
+*.glb
+*.report.json
+
+# Editors
+.vscode/*
+!.vscode/mcp.json
+.DS_Store
+
+# Env
+.env
+.env.*

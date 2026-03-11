@@ -1,0 +1,276 @@
+{
+  "version": 1,
+  "id": "zx_fighter_v1",
+  "supportedAssetTypes": [
+    "character",
+    "weapon",
+    "prop_small",
+    "vehicle_small"
+  ],
+  "budgets": {
+    "character": {
+      "triangles": 2500,
+      "materials": 3,
+      "textures": 1,
+      "atlasWidth": 512,
+      "atlasHeight": 512,
+      "bones": 32,
+      "sockets": 8
+    },
+    "weapon": {
+      "triangles": 900,
+      "materials": 2,
+      "textures": 1,
+      "atlasWidth": 256,
+      "atlasHeight": 256,
+      "bones": 0,
+      "sockets": 2
+    },
+    "prop_small": {
+      "triangles": 600,
+      "materials": 2,
+      "textures": 1,
+      "atlasWidth": 256,
+      "atlasHeight": 256,
+      "bones": 0,
+      "sockets": 0
+    },
+    "vehicle_small": {
+      "triangles": 4500,
+      "materials": 4,
+      "textures": 2,
+      "atlasWidth": 512,
+      "atlasHeight": 512,
+      "bones": 16,
+      "sockets": 6
+    }
+  },
+  "connectorTaxonomy": {
+    "neck": [
+      "neck_socket"
+    ],
+    "arm_socket": [
+      "arm_plug"
+    ],
+    "leg_socket": [
+      "leg_plug"
+    ],
+    "weapon_grip": [
+      "hand_socket"
+    ],
+    "hand_socket": [
+      "weapon_grip"
+    ]
+  },
+  "palettes": [
+    {
+      "id": "fighter_a",
+      "materials": [
+        "cloth_red",
+        "cloth_blue",
+        "metal_dark",
+        "skin_light"
+      ]
+    },
+    {
+      "id": "fighter_b",
+      "materials": [
+        "cloth_black",
+        "cloth_white",
+        "metal_bright",
+        "skin_tan"
+      ]
+    }
+  ],
+  "rigTemplates": [
+    {
+      "id": "biped_fighter_v1",
+      "requiredBones": [
+        "root",
+        "spine",
+        "neck",
+        "hand_r"
+      ],
+      "defaultSockets": [
+        "weapon_r"
+      ]
+    }
+  ],
+  "modules": [
+    {
+      "id": "fighter_torso_base_a",
+      "assetType": "character",
+      "connectors": [
+        {
+          "id": "neck",
+          "kind": "neck"
+        },
+        {
+          "id": "arm_l",
+          "kind": "arm_socket"
+        },
+        {
+          "id": "arm_r",
+          "kind": "arm_socket"
+        },
+        {
+          "id": "leg_l",
+          "kind": "leg_socket"
+        },
+        {
+          "id": "leg_r",
+          "kind": "leg_socket"
+        }
+      ],
+      "regions": [
+        {
+          "id": "chest_bulge",
+          "min": -0.2,
+          "max": 0.3
+        }
+      ],
+      "materialZones": [
+        "primary",
+        "trim"
+      ]
+    },
+    {
+      "id": "fighter_head_base_a",
+      "assetType": "character",
+      "connectors": [
+        {
+          "id": "neck_socket",
+          "kind": "neck_socket"
+        }
+      ],
+      "regions": [
+        {
+          "id": "jaw_width",
+          "min": -0.15,
+          "max": 0.2
+        }
+      ],
+      "materialZones": [
+        "skin",
+        "trim"
+      ]
+    },
+    {
+      "id": "fighter_arm_base_l",
+      "assetType": "character",
+      "connectors": [
+        {
+          "id": "arm_plug",
+          "kind": "arm_plug"
+        },
+        {
+          "id": "hand_socket_l",
+          "kind": "hand_socket"
+        }
+      ],
+      "regions": [
+        {
+          "id": "arm_width",
+          "min": -0.1,
+          "max": 0.15
+        }
+      ],
+      "materialZones": [
+        "primary",
+        "trim"
+      ]
+    },
+    {
+      "id": "fighter_arm_base_r",
+      "assetType": "character",
+      "connectors": [
+        {
+          "id": "arm_plug",
+          "kind": "arm_plug"
+        },
+        {
+          "id": "hand_socket_r",
+          "kind": "hand_socket"
+        }
+      ],
+      "regions": [
+        {
+          "id": "arm_width",
+          "min": -0.1,
+          "max": 0.15
+        }
+      ],
+      "materialZones": [
+        "primary",
+        "trim"
+      ]
+    },
+    {
+      "id": "fighter_leg_base_l",
+      "assetType": "character",
+      "connectors": [
+        {
+          "id": "leg_plug",
+          "kind": "leg_plug"
+        }
+      ],
+      "regions": [
+        {
+          "id": "leg_width",
+          "min": -0.1,
+          "max": 0.15
+        }
+      ],
+      "materialZones": [
+        "primary",
+        "trim"
+      ]
+    },
+    {
+      "id": "fighter_leg_base_r",
+      "assetType": "character",
+      "connectors": [
+        {
+          "id": "leg_plug",
+          "kind": "leg_plug"
+        }
+      ],
+      "regions": [
+        {
+          "id": "leg_width",
+          "min": -0.1,
+          "max": 0.15
+        }
+      ],
+      "materialZones": [
+        "primary",
+        "trim"
+      ]
+    },
+    {
+      "id": "weapon_sword_basic",
+      "assetType": "weapon",
+      "connectors": [
+        {
+          "id": "grip",
+          "kind": "weapon_grip"
+        }
+      ],
+      "regions": [
+        {
+          "id": "blade_length",
+          "min": -0.1,
+          "max": 0.25
+        }
+      ],
+      "materialZones": [
+        "blade",
+        "handle"
+      ]
+    }
+  ],
+  "decalIds": [
+    "dragon_01",
+    "badge_01"
+  ]
+}

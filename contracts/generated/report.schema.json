@@ -1,0 +1,63 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://polybash.dev/schemas/report.schema.json",
+  "title": "PolyBashValidationReport",
+  "type": "object",
+  "required": [
+    "status",
+    "stats",
+    "issues"
+  ],
+  "properties": {
+    "status": {
+      "enum": [
+        "ok",
+        "warning",
+        "error"
+      ]
+    },
+    "stats": {
+      "type": "object"
+    },
+    "issues": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": [
+          "code",
+          "severity",
+          "path",
+          "summary",
+          "detail"
+        ],
+        "properties": {
+          "code": {
+            "type": "string"
+          },
+          "severity": {
+            "enum": [
+              "info",
+              "warning",
+              "error"
+            ]
+          },
+          "path": {
+            "type": "string"
+          },
+          "summary": {
+            "type": "string"
+          },
+          "detail": {
+            "type": "string"
+          },
+          "suggestedFix": {
+            "type": [
+              "string",
+              "null"
+            ]
+          }
+        }
+      }
+    }
+  }
+}

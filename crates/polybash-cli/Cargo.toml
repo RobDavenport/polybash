@@ -1,0 +1,19 @@
+[package]
+name = "polybash-cli"
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+
+[[bin]]
+name = "polybash-cli"
+path = "src/main.rs"
+
+[dependencies]
+clap.workspace = true
+polybash-contracts = { path = "../polybash-contracts" }
+polybash-export = { path = "../polybash-export" }
+polybash-validate = { path = "../polybash-validate" }
+serde_json.workspace = true
+
+[dev-dependencies]
+tempfile.workspace = true

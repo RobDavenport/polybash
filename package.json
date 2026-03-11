@@ -1,0 +1,12 @@
+{
+  "name": "polybash",
+  "private": true,
+  "packageManager": "pnpm@10.0.0",
+  "scripts": {
+    "build": "pnpm --dir plugin build",
+    "test": "pnpm --dir plugin test",
+    "lint": "pnpm --dir plugin lint",
+    "typecheck": "pnpm --dir plugin typecheck",
+    "ci": "pnpm lint && pnpm typecheck && pnpm test"
+  }
+}

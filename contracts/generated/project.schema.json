@@ -1,0 +1,183 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://polybash.dev/schemas/project.schema.json",
+  "title": "PolyBashProject",
+  "type": "object",
+  "required": [
+    "version",
+    "id",
+    "assetType",
+    "stylePackId",
+    "modules",
+    "declaredMetrics"
+  ],
+  "properties": {
+    "version": {
+      "type": "integer",
+      "minimum": 1
+    },
+    "id": {
+      "type": "string",
+      "minLength": 1
+    },
+    "assetType": {
+      "enum": [
+        "character",
+        "weapon",
+        "prop_small",
+        "vehicle_small"
+      ]
+    },
+    "stylePackId": {
+      "type": "string",
+      "minLength": 1
+    },
+    "skeletonTemplate": {
+      "type": [
+        "string",
+        "null"
+      ]
+    },
+    "modules": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": [
+          "instanceId",
+          "moduleId",
+          "transform",
+          "connectorAttachments",
+          "materialSlots",
+          "regionParams"
+        ],
+        "properties": {
+          "instanceId": {
+            "type": "string"
+          },
+          "moduleId": {
+            "type": "string"
+          },
+          "transform": {
+            "type": "object",
+            "required": [
+              "position",
+              "rotation",
+              "scale"
+            ],
+            "properties": {
+              "position": {
+                "type": "array",
+                "items": {
+                  "type": "number"
+                },
+                "minItems": 3,
+                "maxItems": 3
+              },
+              "rotation": {
+                "type": "array",
+                "items": {
+                  "type": "number"
+                },
+                "minItems": 3,
+                "maxItems": 3
+              },
+              "scale": {
+                "type": "array",
+                "items": {
+                  "type": "number"
+                },
+                "minItems": 3,
+                "maxItems": 3
+              }
+            }
+          },
+          "connectorAttachments": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "required": [
+                "localConnector",
+                "targetInstanceId",
+                "targetConnector"
+              ],
+              "properties": {
+                "localConnector": {
+                  "type": "string"
+                },
+                "targetInstanceId": {
+                  "type": "string"
+                },
+                "targetConnector": {
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "materialSlots": {
+            "type": "object",
+            "additionalProperties": {
+              "type": "string"
+            }
+          },
+          "regionParams": {
+            "type": "object",
+            "additionalProperties": {
+              "type": "number"
+            }
+          }
+        }
+      }
+    },
+    "paintLayers": {
+      "type": "array"
+    },
+    "rig": {
+      "type": [
+        "object",
+        "null"
+      ]
+    },
+    "declaredMetrics": {
+      "type": "object",
+      "required": [
+        "triangles",
+        "materials",
+        "textures",
+        "atlasWidth",
+        "atlasHeight",
+        "bones",
+        "sockets"
+      ],
+      "properties": {
+        "triangles": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "materials": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "textures": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "atlasWidth": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "atlasHeight": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "bones": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "sockets": {
+          "type": "integer",
+          "minimum": 0
+        }
+      }
+    }
+  }
+}

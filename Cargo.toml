@@ -1,0 +1,24 @@
+[workspace]
+members = [
+  "crates/polybash-contracts",
+  "crates/polybash-domain",
+  "crates/polybash-ops",
+  "crates/polybash-validate",
+  "crates/polybash-export",
+  "crates/polybash-llm",
+  "crates/polybash-cli",
+  "crates/polybash-wasm",
+]
+resolver = "2"
+
+[workspace.package]
+edition = "2021"
+license = "UNLICENSED"
+version = "0.1.0"
+
+[workspace.dependencies]
+clap = { version = "4.5", features = ["derive"] }
+serde = { version = "1.0", features = ["derive"] }
+serde_json = "1.0"
+tempfile = "3.13"
+thiserror = "2.0"

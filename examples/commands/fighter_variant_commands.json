@@ -1,0 +1,23 @@
+[
+  {
+    "op": "set_region_param",
+    "instanceId": "head_01",
+    "region": "jaw_width",
+    "value": 0.1
+  },
+  {
+    "op": "assign_material_zone",
+    "instanceId": "torso_01",
+    "zone": "primary",
+    "materialId": "cloth_blue"
+  },
+  {
+    "op": "assign_rig_template",
+    "templateId": "biped_fighter_v1"
+  },
+  {
+    "op": "attach_socket",
+    "name": "weapon_r",
+    "bone": "hand_r"
+  }
+]

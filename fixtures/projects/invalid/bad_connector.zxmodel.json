@@ -1,0 +1,274 @@
+{
+  "version": 1,
+  "id": "fighter_bad_connector",
+  "assetType": "character",
+  "stylePackId": "zx_fighter_v1",
+  "skeletonTemplate": "biped_fighter_v1",
+  "modules": [
+    {
+      "instanceId": "torso_01",
+      "moduleId": "fighter_torso_base_a",
+      "transform": {
+        "position": [
+          0,
+          1.0,
+          0
+        ],
+        "rotation": [
+          0,
+          0,
+          0
+        ],
+        "scale": [
+          1,
+          1,
+          1
+        ]
+      },
+      "connectorAttachments": [
+        {
+          "localConnector": "neck",
+          "targetInstanceId": "head_01",
+          "targetConnector": "neck_socket"
+        },
+        {
+          "localConnector": "arm_l",
+          "targetInstanceId": "arm_l_01",
+          "targetConnector": "arm_plug"
+        },
+        {
+          "localConnector": "arm_r",
+          "targetInstanceId": "arm_r_01",
+          "targetConnector": "arm_plug"
+        },
+        {
+          "localConnector": "leg_l",
+          "targetInstanceId": "leg_l_01",
+          "targetConnector": "leg_plug"
+        },
+        {
+          "localConnector": "leg_r",
+          "targetInstanceId": "leg_r_01",
+          "targetConnector": "leg_plug"
+        }
+      ],
+      "materialSlots": {
+        "primary": "cloth_red",
+        "trim": "metal_dark"
+      },
+      "regionParams": {
+        "chest_bulge": 0.12
+      }
+    },
+    {
+      "instanceId": "head_01",
+      "moduleId": "fighter_head_base_a",
+      "transform": {
+        "position": [
+          0,
+          1.8,
+          0
+        ],
+        "rotation": [
+          0,
+          0,
+          0
+        ],
+        "scale": [
+          1,
+          1,
+          1
+        ]
+      },
+      "connectorAttachments": [],
+      "materialSlots": {
+        "skin": "skin_light",
+        "trim": "metal_dark"
+      },
+      "regionParams": {
+        "jaw_width": 0.08
+      }
+    },
+    {
+      "instanceId": "arm_l_01",
+      "moduleId": "fighter_arm_base_l",
+      "transform": {
+        "position": [
+          -0.6,
+          1.2,
+          0
+        ],
+        "rotation": [
+          0,
+          0,
+          0
+        ],
+        "scale": [
+          1,
+          1,
+          1
+        ]
+      },
+      "connectorAttachments": [],
+      "materialSlots": {
+        "primary": "cloth_red",
+        "trim": "metal_dark"
+      },
+      "regionParams": {
+        "arm_width": 0.02
+      }
+    },
+    {
+      "instanceId": "arm_r_01",
+      "moduleId": "fighter_arm_base_r",
+      "transform": {
+        "position": [
+          0.6,
+          1.2,
+          0
+        ],
+        "rotation": [
+          0,
+          0,
+          0
+        ],
+        "scale": [
+          1,
+          1,
+          1
+        ]
+      },
+      "connectorAttachments": [
+        {
+          "localConnector": "hand_socket_r",
+          "targetInstanceId": "head_01",
+          "targetConnector": "neck_socket"
+        }
+      ],
+      "materialSlots": {
+        "primary": "cloth_red",
+        "trim": "metal_dark"
+      },
+      "regionParams": {
+        "arm_width": 0.02
+      }
+    },
+    {
+      "instanceId": "leg_l_01",
+      "moduleId": "fighter_leg_base_l",
+      "transform": {
+        "position": [
+          -0.25,
+          0.3,
+          0
+        ],
+        "rotation": [
+          0,
+          0,
+          0
+        ],
+        "scale": [
+          1,
+          1,
+          1
+        ]
+      },
+      "connectorAttachments": [],
+      "materialSlots": {
+        "primary": "cloth_blue",
+        "trim": "metal_dark"
+      },
+      "regionParams": {
+        "leg_width": 0.03
+      }
+    },
+    {
+      "instanceId": "leg_r_01",
+      "moduleId": "fighter_leg_base_r",
+      "transform": {
+        "position": [
+          0.25,
+          0.3,
+          0
+        ],
+        "rotation": [
+          0,
+          0,
+          0
+        ],
+        "scale": [
+          1,
+          1,
+          1
+        ]
+      },
+      "connectorAttachments": [],
+      "materialSlots": {
+        "primary": "cloth_blue",
+        "trim": "metal_dark"
+      },
+      "regionParams": {
+        "leg_width": 0.03
+      }
+    },
+    {
+      "instanceId": "weapon_01",
+      "moduleId": "weapon_sword_basic",
+      "transform": {
+        "position": [
+          0.95,
+          1.0,
+          0
+        ],
+        "rotation": [
+          0,
+          0,
+          90
+        ],
+        "scale": [
+          1,
+          1,
+          1
+        ]
+      },
+      "connectorAttachments": [],
+      "materialSlots": {
+        "blade": "metal_dark",
+        "handle": "cloth_red"
+      },
+      "regionParams": {
+        "blade_length": 0.1
+      }
+    }
+  ],
+  "paintLayers": [
+    {
+      "type": "fill",
+      "target": "primary",
+      "palette": "fighter_a"
+    },
+    {
+      "type": "decal",
+      "target": "torso_01",
+      "decalId": "dragon_01"
+    }
+  ],
+  "rig": {
+    "templateId": "biped_fighter_v1",
+    "sockets": [
+      {
+        "name": "weapon_r",
+        "bone": "hand_r"
+      }
+    ]
+  },
+  "declaredMetrics": {
+    "triangles": 1800,
+    "materials": 3,
+    "textures": 1,
+    "atlasWidth": 512,
+    "atlasHeight": 512,
+    "bones": 28,
+    "sockets": 1
+  }
+}

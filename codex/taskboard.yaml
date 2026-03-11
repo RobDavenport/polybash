@@ -1,0 +1,284 @@
+project: polybash
+version: 1
+milestones:
+  - id: M1
+    title: Walking skeleton
+    done_when:
+      - monorepo scaffold exists
+      - contracts and schemas compile and validate
+      - CLI validate/export works on canonical fighter fixture
+      - plugin shell builds
+      - project round-trip passes
+      - GLB export and report generation work
+      - CI is green
+  - id: M2
+    title: Authoring MVP
+    done_when:
+      - fighter, prop, and weapon workflows are usable
+      - material zones and basic paint layers work
+      - rig template metadata path is stable
+  - id: M3
+    title: V1
+    done_when:
+      - additional asset categories supported
+      - command DSL integrated with live LLM provider
+      - documentation and packaging polished
+
+tasks:
+  - id: T-00
+    title: Bootstrap monorepo and CI
+    milestone: M1
+    priority: P0
+    lane: trunk
+    depends_on: []
+    outputs:
+      - root workspace files
+      - CI skeleton
+      - lint/test/build commands
+    done_when:
+      - cargo and pnpm commands run
+      - CI jobs defined
+      - docs and examples folders present
+
+  - id: T-01
+    title: Define Rust contracts and schema generation
+    milestone: M1
+    priority: P0
+    lane: contracts
+    depends_on: [T-00]
+    outputs:
+      - project contracts
+      - style pack contracts
+      - validation report contracts
+      - generated JSON Schema
+    done_when:
+      - valid examples pass
+      - invalid examples fail
+      - schema generation reproducible
+
+  - id: T-02
+    title: Add canonical examples and fixtures
+    milestone: M1
+    priority: P0
+    lane: contracts
+    depends_on: [T-01]
+    outputs:
+      - fighter example
+      - style pack example
+      - command example
+      - negative fixtures
+    done_when:
+      - examples used in tests
+      - examples match docs
+
+  - id: T-03
+    title: Implement domain aggregate and command application
+    milestone: M1
+    priority: P0
+    lane: core
+    depends_on: [T-01]
+    outputs:
+      - project normalization
+      - command apply/preview
+      - invariant checks
+    done_when:
+      - domain tests green
+      - preview/apply behavior tested
+
+  - id: T-04
+    title: Implement connector and region ops
+    milestone: M1
+    priority: P0
+    lane: core
+    depends_on: [T-03]
+    outputs:
+      - connector compatibility
+      - transform helpers
+      - region parameter math
+    done_when:
+      - property tests green
+      - deterministic snapshots stable
+
+  - id: T-05
+    title: Implement validator pipeline
+    milestone: M1
+    priority: P0
+    lane: core
+    depends_on: [T-03, T-04]
+    outputs:
+      - typed validator
+      - report generation
+    done_when:
+      - positive and negative fixtures covered
+      - report snapshots stable
+
+  - id: T-06
+    title: Implement GLB exporter
+    milestone: M1
+    priority: P0
+    lane: core
+    depends_on: [T-03, T-05]
+    outputs:
+      - export bundle
+      - deterministic output path
+    done_when:
+      - canonical fighter fixture exports
+      - repeated export stable
+
+  - id: T-07
+    title: Implement CLI validate/export commands
+    milestone: M1
+    priority: P0
+    lane: core
+    depends_on: [T-05, T-06]
+    outputs:
+      - validate command
+      - export command
+      - inspect/report command
+    done_when:
+      - CLI integration tests green
+
+  - id: T-08
+    title: Expose WASM bridge
+    milestone: M1
+    priority: P0
+    lane: bridge
+    depends_on: [T-05, T-06]
+    outputs:
+      - TS-facing validation/export bridge
+    done_when:
+      - parity tests between WASM/native exist
+
+  - id: T-09
+    title: Build plugin shell and state model
+    milestone: M1
+    priority: P0
+    lane: plugin
+    depends_on: [T-00, T-01]
+    outputs:
+      - plugin entry point
+      - controller layer
+      - adapter seams
+    done_when:
+      - plugin builds
+      - controller tests green
+
+  - id: T-10
+    title: Implement project workflow
+    milestone: M1
+    priority: P0
+    lane: plugin
+    depends_on: [T-08, T-09]
+    outputs:
+      - new/open/save flow
+      - style pack load flow
+    done_when:
+      - project round-trip green in plugin tests
+
+  - id: T-11
+    title: Implement assembly workflow
+    milestone: M1
+    priority: P0
+    lane: plugin
+    depends_on: [T-08, T-09]
+    outputs:
+      - browse/place/snap/mirror modules
+    done_when:
+      - assembly acceptance tests green
+
+  - id: T-12
+    title: Implement deformation workflow
+    milestone: M1
+    priority: P0
+    lane: plugin
+    depends_on: [T-08, T-11]
+    outputs:
+      - region control flow
+      - clamp and persist logic
+    done_when:
+      - deformation acceptance tests green
+
+  - id: T-13
+    title: Implement material workflow
+    milestone: M1
+    priority: P0
+    lane: plugin
+    depends_on: [T-08, T-11]
+    outputs:
+      - material zone assignment
+      - basic paint layer model
+    done_when:
+      - material acceptance tests green
+
+  - id: T-14
+    title: Implement rig metadata workflow
+    milestone: M1
+    priority: P0
+    lane: plugin
+    depends_on: [T-08, T-10]
+    outputs:
+      - rig template select
+      - socket metadata
+    done_when:
+      - rig acceptance tests green
+
+  - id: T-15
+    title: Implement acceptance harness and release docs
+    milestone: M1
+    priority: P0
+    lane: qa
+    depends_on: [T-05, T-06, T-10, T-11, T-12, T-13, T-14]
+    outputs:
+      - acceptance suite
+      - smoke checklist
+      - gap report format
+    done_when:
+      - every P0 requirement mapped
+      - release gate summary exists
+
+  - id: T-16
+    title: Define LLM command DSL
+    milestone: M2
+    priority: P1
+    lane: core
+    depends_on: [T-03, T-08]
+    outputs:
+      - command schemas
+      - preview/apply command path
+      - negative fixtures
+    done_when:
+      - valid and invalid command tests green
+
+  - id: T-17
+    title: Extend paint workflow
+    milestone: M2
+    priority: P1
+    lane: plugin
+    depends_on: [T-13]
+    outputs:
+      - decals
+      - richer paint UX
+    done_when:
+      - paint acceptance tests extended
+
+  - id: T-18
+    title: Extend rigging fidelity
+    milestone: M2
+    priority: P1
+    lane: core-plugin
+    depends_on: [T-14, T-06]
+    outputs:
+      - richer rig export
+      - additional weighting modes
+    done_when:
+      - extended rig fixtures green
+
+quality_gates:
+  - cargo fmt --check
+  - cargo clippy --workspace --all-targets -- -D warnings
+  - cargo test --workspace
+  - pnpm lint
+  - pnpm typecheck
+  - pnpm test
+  - pnpm build
+  - coverage thresholds satisfied

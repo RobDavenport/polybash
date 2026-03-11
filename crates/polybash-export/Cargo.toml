@@ -1,0 +1,11 @@
+[package]
+name = "polybash-export"
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+
+[dependencies]
+polybash-contracts = { path = "../polybash-contracts" }
+polybash-validate = { path = "../polybash-validate" }
+serde_json.workspace = true
+thiserror.workspace = true
