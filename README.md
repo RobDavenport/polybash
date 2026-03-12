@@ -141,14 +141,19 @@ Install the workspace dependencies first:
 corepack pnpm install
 ```
 
-To launch the current desktop app from the repo root:
+Then launch the current desktop app from the repo root:
 
 ```bash
-corepack pnpm --dir desktop build
-cargo run --manifest-path desktop/src-tauri/Cargo.toml
+cargo run
 ```
 
-That path uses the built frontend assets in `desktop/dist` and starts the current Tauri desktop shell.
+That command now defaults to the standalone desktop app and builds the desktop frontend assets automatically when `desktop/dist` is missing or stale.
+
+If you want the explicit package form, this is equivalent:
+
+```bash
+cargo run -p polybash-desktop
+```
 
 If you already have the Tauri CLI installed and want a live dev loop instead of a one-shot build:
 

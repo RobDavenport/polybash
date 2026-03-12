@@ -10,6 +10,7 @@ members = [
   "crates/polybash-cli",
   "crates/polybash-wasm",
 ]
+default-members = ["desktop/src-tauri"]
 resolver = "2"
 
 [workspace.package]
