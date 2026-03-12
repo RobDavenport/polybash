@@ -1,129 +1,204 @@
 # Codex Overnight Runbook
 
-## 1. Objective
+## 1. Purpose
 
-Use Codex to deliver the **M1 walking skeleton** of PolyBash overnight.
+Use a 24-72 hour unattended run to move PolyBash toward a **real standalone retro asset creation product**, not just a buildable shell.
 
-This runbook assumes:
-- the repo can be worked on in parallel lanes
-- GUI-dependent behavior should be minimized
-- correctness matters more than breadth
+This runbook is the operator-facing companion to:
+- `codex/prompts/09-24H-AUTONOMOUS-RUNLOOP.md`
+- `codex/taskboard.yaml`
+- `codex/GAP_REPORT.md`
+- `docs/01-PRD.md`
+- `docs/03-WBS-AND-MILESTONES.md`
 
-## 2. Environment assumptions
+## 2. Product boundary for the run
 
-Prepare a clean environment with:
-- Rust stable
-- Node 20+
-- pnpm
-- Python 3.11 (optional helper scripts)
-- GitHub-connected repository if using Codex cloud
-- internet only where dependency installation needs it
+### PolyBash owns
 
-Do not rely on GUI automation for the first overnight run.
+- module browsing and style-pack/library workflows
+- module import and metadata authoring
+- connector visibility and snap UX
+- high-level assembly and constrained shaping
+- material zones, fills, decals, and limited material-slot preview
+- validation, preview/apply, and export
+- reusable character, prop, and later environment chunk workflows
 
-## 3. Recommended task split
+### Blender owns
 
-### Task A — trunk/bootstrap
-Prompt:
-- `prompts/00-MASTER-ORCHESTRATOR.md`
-- then `prompts/01-BOOTSTRAP.md`
+- custom source mesh creation
+- UV unwrap/editing
+- skinning
+- animation
+- heavier baking workflows
 
-Outputs:
-- monorepo skeleton
-- CI skeleton
-- root scripts
-- docs wired in
+Do not let the unattended run drift into building a general-purpose mesh editor or UV tool.
 
-### Task B — contracts/core foundation
-Prompt:
-- `prompts/02-CONTRACTS-SCHEMAS.md`
-- `prompts/03-RUST-CORE-VALIDATOR.md`
+## 3. Current success bar
 
-Outputs:
-- contracts
-- fixtures
-- validator
-- CLI
-- first export path
+By the end of the unattended run, the product should feel materially closer to:
+- a usable character/prop workflow
+- a visible and recoverable editing experience
+- a believable Blender-to-PolyBash content pipeline
 
-### Task C — plugin shell
-Prompt:
-- `prompts/04-PLUGIN-SHELL.md`
-- `prompts/05-ASSEMBLY-DEFORMATION.md`
+The run is not successful if it only produces more infrastructure while the UX still feels opaque.
 
-Outputs:
-- buildable plugin shell
-- controller tests
-- assembly and deformation workflows
+## 4. Preflight checklist
 
-### Task D — surface/rig/export hardening
-Prompt:
-- `prompts/06-PAINTING.md`
-- `prompts/07-RIGGING-EXPORT.md`
+Before starting the unattended run, verify:
 
-Outputs:
-- material zone workflow
-- paint layer model
-- rig metadata path
-- export integration
+- `corepack pnpm install` has completed
+- `cargo run` launches the desktop app from the repo root
+- current baseline is green:
+  - `corepack pnpm --dir desktop typecheck`
+  - `corepack pnpm --dir desktop test`
+  - `corepack pnpm --dir desktop build`
+  - `cargo test --manifest-path desktop/src-tauri/Cargo.toml`
+  - `cargo test --workspace`
+  - `cargo fmt --check`
+- `README.md` still explains the real launch path
+- `codex/STATUS.md`, `codex/GAP_REPORT.md`, and `codex/ACCEPTANCE_SUMMARY.md` are readable and current
 
-### Task E — safety and finish
-Prompt:
-- `prompts/08-LLM-COMMANDS.md`
-- `prompts/09-HARDENING-RELEASE.md`
-- `prompts/10-MERGE-REVIEW.md`
+Do not start a long run from a dirty or ambiguous baseline.
 
-Outputs:
-- command DSL
-- acceptance harness
-- release docs
-- gap report
+## 5. Priority order
 
-## 4. Recommended merge order
+### Wave group A: immediate usability blockers
 
-1. bootstrap
-2. contracts
-3. core/domain/validator
-4. export + CLI
-5. plugin shell
-6. material/rig/export integration
-7. hardening/review
+1. `T-20` visible undo/redo and action history UX
+2. `T-21` viewport orientation and transform gizmos
+3. `T-22` visible connector points and snap targets
+4. `T-19` module preview/browser workflow
 
-## 5. Ground rules for every task
+### Wave group B: real content pipeline
 
-- read `AGENTS.md` first
-- read the relevant docs before editing code
-- write failing tests first
-- keep summaries explicit
-- keep changes scoped
-- do not fake completion
+5. `T-24` Blender handoff and module import pipeline
+6. `T-23` reusable module metadata authoring workflow
+7. `T-25` reusable style-pack and module library workflow
+8. `T-26` texture/material strategy with Blender-owned UV contract
 
-## 6. If a task goes red
+### Wave group C: product hardening
 
-Use `prompts/11-RECOVERY-LOOP.md`.
+9. broader preview/diff UI coverage
+10. validation/export UX hardening
+11. stronger acceptance and smoke coverage
 
-Focus order:
-1. restore build
-2. restore contracts
-3. restore validate/export
-4. restore plugin tests
-5. restore docs/examples parity
+Characters and props remain the first release focus.
+Environment/world chunk work should not preempt the items above unless an explicit task depends on it.
 
-## 7. Expected overnight deliverable
+## 6. Wave rules
 
-By morning, you want:
-- a compilable repo
-- green tests
-- example project fixtures
-- working validator CLI
-- working GLB export path
-- buildable plugin shell
-- clear gap report for anything not fully polished
+For each wave:
 
-## 8. Morning review checklist
+1. choose 1 to 3 tasks with disjoint file ownership
+2. assign each worker a narrow file scope
+3. require failing tests first where practical
+4. land the smallest slice that materially improves the product
+5. validate that slice before opening the next risky wave
+6. update handoff docs after meaningful changes
 
-- inspect CI status
-- inspect generated examples
-- inspect report snapshots
-- inspect gap report
-- validate that no critical path is missing
+Keep waves small.
+Do not run multiple workers on the same files.
+
+## 7. Worker management
+
+### Required roster
+
+Every progress update should show:
+- active workers
+- owned files
+- task ids
+- current validation state
+- next queued lanes
+
+### Stall policy
+
+If a worker does not emit a completion signal after two wait windows:
+1. inspect the owned files directly
+2. if files are unchanged, mark the lane stalled
+3. relaunch the lane with a smaller scope
+4. do not silently wait forever
+
+### Integration policy
+
+- prefer worker-owned implementation
+- use the main thread for orchestration, validation, and small integration fixes only
+- keep a clean boundary between lanes
+
+## 8. Validation cadence
+
+### Default desktop baseline
+
+Run after each meaningful desktop wave:
+- `corepack pnpm --dir desktop typecheck`
+- `corepack pnpm --dir desktop test`
+- `corepack pnpm --dir desktop build`
+- `cargo test --manifest-path desktop/src-tauri/Cargo.toml`
+
+### Major checkpoint baseline
+
+Run after cross-cutting Rust or content-pipeline waves:
+- `cargo test --workspace`
+- `cargo fmt --check`
+
+Do not postpone validation until the end of the run.
+
+## 9. Commit and push policy
+
+Use checkpoint commits, not one giant end-of-run dump.
+
+Recommended cadence:
+- one commit per validated wave or major product slice
+- push after each validated checkpoint that materially improves the repo
+
+Suggested checkpoint boundaries:
+- undo/redo UX
+- gizmos/orientation
+- connector visibility
+- module preview/browser
+- Blender import pipeline
+- module metadata authoring
+- style-pack/library workflow
+- material strategy boundary/docs
+
+## 10. Documentation policy
+
+After each meaningful wave, update the relevant docs:
+
+- `codex/STATUS.md`
+- `codex/GAP_REPORT.md`
+- `codex/ACCEPTANCE_SUMMARY.md` when evidence changes
+- `README.md` when user-facing behavior changes
+
+Keep claims narrow and honest.
+Do not describe generalized workflows when only one narrow slice is implemented.
+
+## 11. Stop conditions
+
+Stop the unattended run only when one of these is true:
+
+- the current wave is validated, documented, and the next wave is clearly queued
+- a hard blocker prevents safe progress
+- the repo cannot be kept green without user intervention
+
+Do not stop merely because one worker stalled; rescope and continue.
+
+## 12. Morning review checklist
+
+When the run ends, review:
+
+- latest validated baseline commands
+- latest pushed commit(s)
+- current `codex/STATUS.md`
+- current `codex/GAP_REPORT.md`
+- whether `T-19` through `T-26` moved materially
+- whether the product feels more usable, not just more complete on paper
+
+## 13. Immediate next unattended target
+
+If starting tonight, the first wave should be:
+
+1. visible undo/redo and action-history UX
+2. viewport orientation + transform gizmos
+3. visible connector points/snap targets
+
+That is the highest-value usability pass before deeper content-pipeline work.

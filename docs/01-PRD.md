@@ -492,4 +492,4 @@ PolyBash is succeeding when:
 - multiplayer collaboration
 - marketplace/distribution
 
-These are not “forgotten. EThey are deliberately outside the contract so the product can stay focused and become real.
+These are not "forgotten." They are deliberately outside the contract so the product can stay focused and become real.
