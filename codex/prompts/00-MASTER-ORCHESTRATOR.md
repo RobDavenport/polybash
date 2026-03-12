@@ -16,6 +16,7 @@ Deliver **M1: the walking skeleton**.
 
 Do not try to finish the entire long-term product. Finish the first complete vertical slice defined by the docs.
 Treat the standalone desktop app as the active product path.
+When the user asks for a long unattended pass, treat this file as the base policy and then use `codex/prompts/09-24H-AUTONOMOUS-RUNLOOP.md`.
 
 ## Hard rules
 
@@ -29,6 +30,8 @@ Treat the standalone desktop app as the active product path.
 - Preserve headless testability.
 - Be explicit about anything incomplete.
 - Prefer `desktop/` over `plugin/` for any new UI/app-shell work unless the task is explicitly about migration or deprecation.
+- Prioritize real usability blockers and reusable content pipelines over cosmetic shell churn.
+- Keep UV unwrap/editing in Blender unless the taskboard explicitly promotes in-app UV work.
 
 ## Required deliverable for this task
 
@@ -43,6 +46,8 @@ Create or verify:
 
 ## Execution pattern
 
+This is a subagent-first orchestration role whenever the work is large enough to split.
+
 For each subtask:
 1. cite the task id from `codex/taskboard.yaml`
 2. state the acceptance criteria being targeted
@@ -52,9 +57,28 @@ For each subtask:
 6. run validation commands
 7. summarize what changed and what remains
 
+For unattended or long-running passes:
+1. split work into disjoint file-owned lanes
+2. publish a wave roster
+3. timebox workers
+4. inspect file scopes if a worker goes silent
+5. relaunch stalled lanes smaller
+6. validate after each landed wave
+7. update handoff docs before moving on
+
+Current priority order for standalone product work:
+1. module preview/browser
+2. visible undo/redo UX
+3. viewport gizmos and orientation aids
+4. connector/snap-point visibility
+5. module authoring/import pipeline
+6. Blender handoff and material/texture strategy
+7. broader preview/diff coverage and acceptance hardening
+
 ## Output format for each summary
 
 - task ids completed
+- workers used when relevant
 - tests added first
 - commands run
 - results

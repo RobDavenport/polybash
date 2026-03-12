@@ -15,7 +15,9 @@ milestones:
     title: Authoring MVP
     done_when:
       - fighter, prop, and weapon workflows are usable
-      - material zones and basic paint layers work
+      - module browsing, visible transform aids, and undo/redo are usable
+      - reusable module authoring and Blender handoff workflows are usable
+      - material zones and basic paint layers work within the defined Blender-owned UV pipeline
       - rig template metadata path is stable
   - id: M3
     title: V1
@@ -272,6 +274,120 @@ tasks:
       - additional weighting modes
     done_when:
       - extended rig fixtures green
+
+  - id: T-19
+    title: Add module preview browser workflow
+    milestone: M2
+    priority: P1
+    lane: desktop
+    depends_on: [T-11]
+    outputs:
+      - module preview panel
+      - clearer style-pack module thumbnails or proxy previews
+      - selection-ready module inspection before placement
+    done_when:
+      - desktop tests cover preview browsing and selection
+      - module placement flow is understandable without trial-and-error
+
+  - id: T-20
+    title: Surface usable desktop undo and redo controls
+    milestone: M2
+    priority: P1
+    lane: desktop
+    depends_on: [T-11, T-12, T-13]
+    outputs:
+      - visible undo control
+      - visible redo control
+      - action history affordance
+    done_when:
+      - desktop tests cover multi-step undo and redo
+      - shell users can recover from common editing mistakes without reloading
+
+  - id: T-21
+    title: Add viewport orientation and transform gizmos
+    milestone: M2
+    priority: P1
+    lane: desktop
+    depends_on: [T-11, T-12]
+    outputs:
+      - world orientation widget
+      - visible translate and scale gizmos
+      - clearer transform affordances in the viewport
+    done_when:
+      - desktop interaction tests cover gizmo-driven transforms
+      - viewport affordances are visible without relying on hidden drag modifiers
+
+  - id: T-22
+    title: Visualize connector points and snap targets
+    milestone: M2
+    priority: P1
+    lane: desktop
+    depends_on: [T-11]
+    outputs:
+      - visible connector markers
+      - snap-point highlighting
+      - connector compatibility feedback in the viewport
+    done_when:
+      - desktop tests cover connector point visibility state
+      - users can identify valid connection points before attaching or snapping
+
+  - id: T-23
+    title: Implement reusable module metadata authoring workflow
+    milestone: M2
+    priority: P1
+    lane: desktop
+    depends_on: [T-11, T-12, T-13, T-19, T-22]
+    outputs:
+      - connector authoring flow
+      - material-zone authoring flow
+      - region metadata authoring flow
+      - reusable module draft editing
+    done_when:
+      - desktop tests cover authoring connector, region, and material metadata on reusable modules
+      - authored module metadata persists cleanly into reusable module records
+
+  - id: T-24
+    title: Implement Blender handoff and module import pipeline
+    milestone: M2
+    priority: P1
+    lane: core-desktop
+    depends_on: [T-10, T-11, T-13, T-23]
+    outputs:
+      - Blender export contract for module source meshes
+      - module import flow into PolyBash
+      - imported module fixture coverage
+      - authoring docs for Blender handoff
+    done_when:
+      - a Blender-authored canonical module fixture imports into the desktop shell
+      - imported modules can be previewed, placed, validated, and exported without manual JSON editing
+
+  - id: T-25
+    title: Implement reusable style-pack and module library workflow
+    milestone: M2
+    priority: P1
+    lane: desktop
+    depends_on: [T-19, T-23, T-24]
+    outputs:
+      - reusable module library management
+      - style-pack assembly and save flow
+      - author-facing module preview/browser surface
+    done_when:
+      - users can save and reload reusable authored modules and style-pack content
+      - desktop tests cover library browsing and placement of user-authored modules
+
+  - id: T-26
+    title: Define texture and material authoring strategy with Blender-owned UV contract
+    milestone: M2
+    priority: P1
+    lane: core-desktop
+    depends_on: [T-13, T-24]
+    outputs:
+      - explicit material and texture pipeline docs
+      - validator rules for imported material-zone and UV expectations
+      - fixtures that encode the Blender-owned UV stance
+    done_when:
+      - docs and fixtures make it explicit that UV unwrap/editing stays in Blender for M2
+      - imported modules validate against the declared material-zone and UV contract
 
 quality_gates:
   - cargo fmt --check
