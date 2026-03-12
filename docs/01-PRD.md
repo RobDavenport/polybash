@@ -4,303 +4,492 @@
 
 **Working name:** PolyBash
 
-PolyBash is a beginner-friendly retro 3D asset builder focused on creating game-ready meshes that sit between Asset Forge and Blender.
+PolyBash is a standalone desktop system for creating **retro low-poly game assets** in the visual range of PS1, N64, and PS2-era content.
 
-It is intended to support:
+It is not trying to replace Blender.
+It is trying to become the **best retro asset pipeline** between lightweight toy builders and full 3D DCCs:
+- more flexible than Asset Forge
+- higher-fidelity than Blockbench
+- simpler and more guided than Blender
+
+The product is aimed at people who want to ship real assets, not just assemble demos.
+Its standard is not "technically interesting." Its standard is:
+- a working asset pipeline
+- useful editing
+- assets good enough to ship a game
+
+PolyBash is built around **module-first authoring**:
+- browse reusable modules
+- assemble assets from compatible parts
+- edit metadata and constrained shape parameters
+- validate the result
+- export clean GLB
+
+The system is intentionally opinionated.
+It favors constrained, explainable, game-ready workflows over unrestricted mesh editing.
+
+## 2. Product positioning
+
+### Category
+
+PolyBash is a **low-poly game asset content creation system**.
+
+It sits between:
+- **Asset Forge** style assembly tools, which are fast but limited
+- **Blockbench** style lightweight editors, which are approachable but lower-fidelity
+- **Blender**, which is powerful but too broad and too expensive cognitively for the target workflow
+
+### Competitive promise
+
+PolyBash should win on:
+- speed of building retro assets from reusable content
+- clarity of the content pipeline
+- visible, understandable editing affordances
+- validation and export readiness
+- reuse of modules, style packs, and tagged content libraries
+
+It should not try to win on:
+- unrestricted modeling power
+- animation authoring
+- UV editing
+- deep shader authoring
+
+## 3. Target users
+
+### Primary users
+
+- solo indie developers shipping stylized retro games
+- small teams that need a fast asset pipeline for low-poly production
+
+### Secondary users
+
+- technical artists building reusable kits, modules, and style packs
+- designers who need to generate many asset variants quickly without living in Blender
+
+### Tertiary users
+
+- hobbyists who want a simpler path into game-ready 3D asset creation
+
+## 4. Asset scope
+
+### First-class asset classes
+
+- characters
 - props
 - weapons
-- characters
-- vehicles
-- modular environment chunks
 
-The product ships as a **standalone desktop application** with:
-- module-driven kitbashing
-- constrained shaping instead of full freeform modeling
-- palette and material assignment
-- lightweight paint-layer support
-- rig templates and rig metadata
-- strict export validation
-- clean GLB export
-- an optional LLM-assisted structured editing layer
+### Serious but secondary for the first real release
 
-The output target is a pipeline suitable for Nethercore ZX-style games and similar retro 3D engines.
+- environment pieces
+- modular world chunks
+- prefab-like scene kits
 
-## 2. Problem statement
+### Explicit direction
 
-General-purpose DCCs are powerful but hostile to beginners and slow for constrained retro asset production. Simple kitbash tools are fast, but too limiting for expressive characters, weapons, vehicles, and reusable game assets.
+Characters are the flagship workflow.
+Environment and world chunk workflows must still be real, not token support, but they do not define the first shipping release.
 
-The gap:
-- beginners need structure
-- technical users need speed
-- game developers need export-ready assets
-- retro aesthetics benefit from explicit constraints and validation
-
-## 3. Product vision
-
-Create a constrained 3D asset builder that:
-- feels approachable to non-expert modelers
-- still produces usable, game-ready meshes
-- preserves style consistency through style packs
-- avoids "mini-Blender" scope creep
-- can hand off to Blender for advanced animation when needed
-
-## 4. Target users
-
-### Primary
-Solo and small-team indie game developers making retro 3D games.
-
-### Secondary
-Technical artists or designers who want to author variations quickly without deep modeling knowledge.
-
-### Tertiary
-Writers and designers using LLM assistance to propose characters or props that can then be turned into structured editable assets.
-
-## 5. Primary use cases
-
-1. Create a fighter character from a template in the desktop app, swap parts, adjust silhouette, assign palette and material zones, export to GLB, and continue animation in Blender.
-2. Create a weapon or prop by assembling modules and adjusting a few guided deformation controls.
-3. Create modular environment chunks using connectors and a style pack with enforced texture and mesh budgets.
-4. Use natural language to request structured edits, preview them, and apply them safely.
-
-## 6. Goals
+## 5. Product goals
 
 ### Product goals
-- Enable a novice to produce a usable retro asset quickly.
-- Keep assets within style-pack and engine budget constraints.
-- Export deterministic game-ready GLB files.
-- Preserve an editable authoring format.
-- Support a direct path to Blender for animation and polish.
-- Make validation a first-class feature rather than an afterthought.
+
+- Let a user create retro game-ready assets without needing Blender for every edit.
+- Provide a reusable module and style-pack pipeline instead of one-off asset assembly.
+- Make the product usable enough that a small team could ship game assets made with it.
+- Keep the workflow visually understandable and operationally safe.
+- Preserve a clean handoff to Blender where Blender remains the better tool.
+
+### Workflow goals
+
+- Fast module browsing and placement
+- Clear connector and snap behavior
+- Real undo/redo and editing recovery
+- Understandable transform and orientation aids
+- Reusable content library workflows
+- Deterministic validation and export
 
 ### Engineering goals
-- Maintain a strict separation between desktop UI logic and deterministic core logic.
-- Drive development with TDD.
-- Make contracts explicit and versioned.
-- Make all critical paths testable in headless CI.
 
-## 7. Non-goals
+- Preserve Rust as the deterministic source of truth for contracts, domain rules, validation, preview/apply, and export.
+- Keep the desktop shell focused on UI, native integration, and orchestration.
+- Keep critical paths testable in headless CI.
+- Keep the project buildable and honest during autonomous long-run implementation.
 
-PolyBash v1 is **not**:
+## 6. Non-goals
+
+PolyBash near-term scope is **not**:
 - a full DCC replacement
+- a low-level mesh editor with vertex, edge, or face workflows
+- an in-app UV unwrap editor
+- an animation authoring package
+- a skinning or weight-painting tool
 - a sculpting tool
-- a node material editor
-- a full animation package
-- a cloth or hair simulation tool
-- a procedural modeling graph tool
+- a shader graph editor
+- a multiplayer collaboration product
 - a marketplace platform
-- an unconstrained text-to-mesh generator
 
-## 8. UX principles
+These may exist as later opportunities, but they are not part of the product contract for the near-term system.
 
-1. **Guided over open-ended**
-   Prefer templates, constrained edits, and high-signal controls.
+## 7. Product principles
 
-2. **Game-ready by default**
-   Export, budgets, and validation are always visible.
+### 7.1 Guided, not unrestricted
 
-3. **Beginner-friendly, not toy-like**
-   The system should feel approachable without preventing professional output.
+PolyBash should present high-level, understandable controls:
+- module placement
+- constrained parameters
+- connectors
+- style-pack-aware materials
 
-4. **Visual edits should map to clear data**
-   Every user action should correspond to structured project data.
+It should not default to low-level topology manipulation.
 
-5. **Safe LLM assistance**
-   Natural-language input should produce reversible structured edits.
+### 7.2 Real pipeline over toy delight
 
-## 9. Product scope
+The product should optimize for:
+- reusable content
+- exportable output
+- predictable validation
+- team-readable asset structure
 
-## 9.1 Overnight target (P0 walking skeleton)
+Not just quick screenshots.
 
-The overnight target is the smallest end-to-end product slice that proves the standalone architecture:
+### 7.3 Blender is a partner, not the enemy
 
-- create, open, and save `.zxmodel`
-- support native desktop document dialogs
-- load a style pack
-- load module descriptors
-- browse modules by category
-- add and remove modules in a scene
-- attach and detach connectors using snap and compatibility rules
-- apply constrained deformations to authored regions
-- assign material zones from a palette or material preset
-- assign a rig template and socket metadata
-- export `.glb` through the Rust-owned export path
-- run validation and emit a report through the Rust-owned validation path
-- provide example fixtures and tests
+PolyBash deliberately relies on Blender for:
+- custom source mesh authoring
+- UV unwrap/editing
+- skinning
+- animation
+- heavier baking workflows
 
-## 9.2 V1 scope
+PolyBash should own the structured assembly and game-asset pipeline around that authored content.
 
-### Asset authoring
-- templates for fighter, prop, weapon, vehicle, and room chunk
-- part library with category filters and tags
-- symmetry and mirroring support
-- connector-driven placement
-- transform gizmo integration
-- constrained silhouette controls
+### 7.4 High signal UX
 
-### Surface workflow
-- material slot assignment
-- palette presets
-- texture atlas generation and management
-- decals and basic paint layers
-- texture import and export
+Important state must be visible:
+- what module is selected
+- where connectors are
+- what transforms are active
+- what can snap
+- what changed
+- what is invalid
 
-### Rigging and export
-- biped, mech, and vehicle rig templates
-- rigid, hybrid, and smooth rig modes
-- sockets and engine metadata
-- GLB export
-- validation report
+### 7.5 Reuse is a first-class feature
 
-### LLM assistance
-- convert natural language into structured edit suggestions
-- preview before apply
-- apply with undo support
-- validator-aware feedback
+Reusable modules and style packs are part of the product, not hidden implementation details.
 
-## 9.3 Deferred after v1
+## 8. Core product model
 
-- advanced paint brushes
-- smooth skin paint UI
-- animation timeline and editor
-- custom shader authoring
-- online sharing and distribution
-- collaborative editing
+### 8.1 Projects
 
-## 10. Functional requirements
+A project is the editable authoring document for an asset or modular scene assembly.
 
-### FR-01 Project lifecycle
-The system must create, open, save, and version `.zxmodel` files through the standalone desktop document workflow and the headless CLI.
+A project should:
+- reference one or more enabled style packs
+- contain placed module instances
+- store transforms and metadata
+- store local copy-on-write overrides where needed
+- remain deterministic and serializable
 
-### FR-02 Template initialization
-The system must initialize a new project from a supported template:
-- fighter
-- prop
-- weapon
-- vehicle
-- modular chunk
+### 8.2 Modules
 
-### FR-03 Style packs
-The system must load a style pack that defines:
-- budgets
-- palette and material presets
+A module is a reusable authored building block.
+
+Modules may contain:
+- pivot/origin data
+- connectors
+- material zones
+- deformation regions
+- sockets
+- parameterized behaviors where supported
+
+Modules are expected to be imported from Blender-authored source in the near-term product.
+
+### 8.3 Style packs
+
+Style packs are first-class content libraries.
+
+A style pack can contain:
+- reusable modules
+- tags and categories
+- palettes and materials
+- decals
 - connector taxonomy
 - rig templates
-- paint rules
-- asset category allowances
+- validation rules or limits
+- starter/example templates
 
-### FR-04 Module library
-The system must display modules by:
+Multiple style packs can be enabled at once.
+Users should be able to browse across packs and filter by pack, category, or tags.
+
+### 8.4 Copy-on-write content behavior
+
+Base modules and packs can be locked.
+Users can create local overrides through copy-on-write behavior:
+- duplicate a style pack
+- duplicate a module
+- create local modifications instead of mutating the base pack
+
+This is important for real production use and library safety.
+
+## 9. Core workflows
+
+### 9.1 Character workflow
+
+The primary user flow is:
+1. start from a character template or empty character-ready project
+2. browse modules from one or more enabled style packs
+3. place and connect body parts, armor, accessories, and props
+4. adjust constrained parameters on selected modules
+5. assign materials, fills, decals, and metadata
+6. validate budgets and structural correctness
+7. export GLB
+8. optionally move to Blender for skinning and animation
+
+### 9.2 Prop and weapon workflow
+
+Users should be able to:
+- start from example templates or an empty project
+- assemble modular parts quickly
+- adjust constrained proportions
+- preview and validate materials/metadata
+- export with minimal ceremony
+
+### 9.3 Environment and world chunk workflow
+
+PolyBash should support:
+- modular environment asset creation
+- chunk/prefab-style scene assembly
+- tagged environment kits
+- optional scripted or randomized layout helpers later
+
+The first priority is reusable environment content and chunk assembly.
+Shipping a full level editor is not the first product milestone.
+
+### 9.4 Content pipeline workflow
+
+The reusable content pipeline is critical:
+1. author source module mesh in Blender
+2. bring it into PolyBash through an import contract
+3. define pivots, connectors, material zones, deformation regions, and sockets
+4. save it as reusable module/style-pack content
+5. assemble downstream assets from that content
+
+Without this workflow, PolyBash remains a shell around fixed demo content.
+
+## 10. Blender boundary
+
+### Blender remains responsible for
+
+- custom mesh modeling for new source modules
+- UV unwrap/editing
+- skinning
+- animation
+- heavier baking and DCC-heavy polish
+
+### PolyBash remains responsible for
+
+- module import
+- connector authoring
+- pivot/origin handling
+- material-zone metadata
+- deformation-region metadata
+- socket metadata
+- module browsing and assembly
+- style-pack and content-library usage
+- validation
+- structured preview/apply behavior
+- export
+
+### Near-term import expectation
+
+The near-term product does **not** require a Blender addon.
+An explicit import contract and supported source format are enough initially.
+
+## 11. Surface, materials, and texturing
+
+PolyBash near-term surface workflow should support:
+- material zones
+- palette/material assignment
+- fills
+- decals
+- a small set of preview/authoring slots such as:
+  - albedo
+  - metallic-roughness
+
+PolyBash should **not** become a full texture painting or UV editing package in the first real release.
+
+The product must make the boundary explicit:
+- UV unwrap/editing stays in Blender
+- PolyBash owns material assignment, preview, and limited surface-layer workflows
+
+## 12. Viewport and UX requirements
+
+A real product version of PolyBash needs:
+- module preview/browser clarity
+- visible undo/redo
+- transform gizmos
+- orientation cube or equivalent world-orientation aid
+- visible connector points and snap targets
+- automatic/intelligent snapping by default
+- manual fallback controls when automatic snapping is not enough
+- clear edit history
+
+These are product requirements, not polish.
+
+## 13. Randomization and scripting
+
+PolyBash should eventually support two levels of automation:
+
+### Nearer-term
+
+- lightweight scatter
+- variants
+- simple rule-driven placement helpers
+
+### Later
+
+- heavier scripting, likely via Lua or equivalent
+- scripted generation of layouts and module parameter variation
+
+Generated results should be savable back into normal editable project data.
+
+## 14. Functional requirements
+
+### FR-01 Project model
+
+The system must create, open, save, and version project files that reference external module/style-pack content and preserve deterministic authoring state.
+
+### FR-02 Multi-pack browsing
+
+The system must allow multiple style packs to be enabled at once and browsed together.
+
+### FR-03 Tagged content browsing
+
+The system must present modules with:
+- thumbnail or preview
+- name
 - category
-- asset type
 - tags
-- compatibility with the current style pack
+- style-pack attribution
 
-### FR-05 Placement
-The system must place module instances in the scene with transform metadata and stable instance ids.
+### FR-04 Module placement and assembly
 
-### FR-06 Snap and connect
-The system must support connector-based attachment and detachment with validation of compatible connector types.
+The system must support module-first assembly with stable instance ids, transforms, and connector-aware placement.
 
-### FR-07 Symmetry and mirroring
-The system must support mirrored placement or mirrored module generation where applicable.
+### FR-05 Connector visibility and snapping
 
-### FR-08 Guided deformation
-The system must support constrained deformations on authored regions, including a minimal initial set:
-- scale
-- taper
-- bulge
-- bend
-- twist
+The system must visualize connector points and support both intelligent default snapping and manual fallback selection.
 
-### FR-09 Material zones
-The system must allow per-zone material and palette assignments.
+### FR-06 Constrained module shaping
 
-### FR-10 Paint layers
-The system must support a minimal paint layer model:
-- fill
-- decal
-- optional brush stroke placeholder in the first slice
+The system must support high-level constrained parameters and deformation regions rather than low-level topology editing.
 
-### FR-11 Rig templates
-The system must apply rig templates and store rig metadata on the asset.
+### FR-07 Material and surface workflow
 
-### FR-12 Socket metadata
-The system must support named sockets or hardpoints bound to bones or transforms.
+The system must support material zones, fills, decals, and limited material slot preview/authoring without owning UV editing.
 
-### FR-13 Export
-The system must export a GLB file suitable for downstream tools and engine ingestion from both the desktop shell and the CLI.
+### FR-08 Reusable content pipeline
 
-### FR-14 Validation
-The system must validate:
-- mesh budgets
-- texture budgets
-- style pack constraints
-- connector integrity
-- required metadata
-- export completeness
+The system must support importing Blender-authored module content and attaching PolyBash metadata such as connectors, pivots, material zones, sockets, and deformation regions.
 
-### FR-15 Reporting
-The system must emit a structured report summarizing statistics, warnings, and errors.
+### FR-09 Copy-on-write editing
 
-### FR-16 Undoability
-Edits must be representable as reversible project operations, at least at the command level.
+The system must support safe local overrides or duplication workflows for modules and style packs rather than mutating locked source content directly.
 
-### FR-17 LLM command layer
-The system must define a structured command DSL for natural-language-assisted edits, even if the first overnight slice ships with a mock or stub interpreter.
+### FR-10 Validation
 
-## 11. Non-functional requirements
+The system must expose validation that is useful and adjustable rather than purely opinionated preset gating.
+Users should be able to see and tune the relevant constraints and inspect resulting asset stats.
 
-### NFR-01 Determinism
-The same input project and style pack must produce the same export and report.
+### FR-11 Export
 
-### NFR-02 Headless testability
-Critical logic must be runnable in CI without the desktop GUI host.
+The system must export GLB first.
+Additional formats may come later if low-cost.
 
-### NFR-03 Performance
-Common operations on a typical fighter asset should feel interactive on a normal development machine.
+### FR-12 History and recovery
 
-### NFR-04 Safety
-Validation and import or export paths must fail explicitly on invalid inputs.
+The system must provide real undo/redo behavior and user-visible edit recovery.
 
-### NFR-05 Compatibility
-The system must keep authoring and export contracts versioned and backwards-conscious.
+### FR-13 Templates and examples
 
-### NFR-06 Observability
-Failures must produce actionable errors.
+The system must ship example presets and showcase templates for common asset categories.
 
-### NFR-07 Coverage
-Critical core logic must meet the coverage and test gate requirements defined in the quality doc.
+### FR-14 Environment/chunk support
 
-## 12. Success metrics
+The system must support modular environment and chunk assembly, even if character/prop workflows remain the first release focus.
 
-### Product metrics
-- A new user can produce a basic fighter asset in under 20 minutes using a template and modules.
-- The export path works on all canonical fixtures.
-- Validation catches out-of-budget fixtures before export acceptance.
-- The authoring format stays editable after repeated load and save cycles.
+## 15. Non-functional requirements
 
-### Engineering metrics
-- All P0 acceptance criteria are automated except explicitly documented manual smoke checks.
-- Core contract, validation, and export crates meet coverage targets.
-- The standalone desktop shell and core workspace build reproducibly from a clean environment.
+### NFR-01 Deterministic output
 
-## 13. Constraints and assumptions
+The same project and content inputs must produce stable validation and export outputs.
 
-- The first implementation is a focused standalone desktop authoring tool, not a full general-purpose DCC.
-- The desktop shell owns the editor chrome, document workflow, and viewport integration for v1.
-- Rust is the deterministic core.
-- TypeScript powers the desktop UI shell.
-- Tauri is the desktop bridge layer.
-- Blender remains the downstream animation tool.
-- GLB is the export target.
-- `.zxmodel` is the authoring source of truth.
+### NFR-02 Headless core validation
 
-## 14. Open issues intentionally closed by decision
+Critical import, validation, preview/apply, and export logic must remain testable outside the GUI shell.
 
-The following are treated as resolved defaults for v1 so implementation can begin without drift:
+### NFR-03 Usable performance
 
-- animation authoring is downstream, not in scope for overnight
-- style packs own budgets and palettes
-- LLM assistance uses structured commands only
-- direct freeform mesh editing is not the main workflow
-- validation runs both during authoring and export
+Module browsing, placement, transform edits, validation, and export must feel responsive on a normal development machine for typical retro assets.
+
+### NFR-04 Explicit failure
+
+Import, validation, and export failures must be actionable and typed, not silent.
+
+### NFR-05 Contract clarity
+
+The Blender-owned boundary and PolyBash-owned boundary must remain explicit in docs and implementation.
+
+## 16. Phased scope
+
+### M1: Walking skeleton
+
+The first complete slice proves:
+- desktop shell
+- Rust core
+- project flow
+- module assembly
+- constrained metadata editing
+- validation
+- export
+- CI
+
+### M2: Authoring MVP
+
+M2 should make the product genuinely usable for character and prop creation:
+- usable module browser
+- visible undo/redo and transform aids
+- visible connector/snap affordances
+- real reusable module metadata authoring
+- Blender handoff and import workflow
+- reusable style-pack/library workflow
+- material workflow within the Blender-owned UV boundary
+
+### M3: Production-ready retro asset pipeline
+
+M3 should make the system feel like a serious retro asset production tool:
+- stronger environment/chunk workflows
+- broader preview/apply coverage
+- stronger validation UX
+- scripting/randomization support
+- packaging and docs polish
+
+## 17. Success criteria
+
+PolyBash is succeeding when:
+- a small team can create characters and props through a repeatable pipeline
+- reusable module/style-pack content is practical, not theoretical
+- users can recover from edits and understand what the viewport is doing
+- Blender handoff is clear and low-friction
+- exported assets are good enough to ship in a real game
+
+## 18. Explicitly out of scope for the first real release
+
+- in-app UV unwrap/editing
+- in-app skinning
+- in-app animation authoring
+- low-level vertex/edge/face modeling
+- multiplayer collaboration
+- marketplace/distribution
+
+These are not “forgotten. EThey are deliberately outside the contract so the product can stay focused and become real.

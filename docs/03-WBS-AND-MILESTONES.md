@@ -2,49 +2,79 @@
 
 ## 1. Overview
 
-This WBS is designed for two horizons:
+This WBS is organized around the actual product direction:
 
-- **Overnight horizon:** deliver the P0 walking skeleton
-- **V1 horizon:** expand the walking skeleton into the broader product described in the PRD
+- **M1:** finish the standalone walking skeleton
+- **M2:** make PolyBash a genuinely usable character-and-prop authoring MVP
+- **M3:** extend the same product into a broader retro asset production system with environment workflows and reusable content pipelines
+
+The product is intentionally **not** a general 3D DCC.
+It is a **module-first, high-level, retro asset creation system** that sits between Asset Forge and Blender:
+
+- more flexible and metadata-aware than Asset Forge
+- higher fidelity and broader content workflows than Blockbench
+- much simpler than Blender
+
+Near-term scope remains explicit:
+
+- no in-app UV unwrap or UV editing
+- no animation authoring
+- no skinning/weight painting authoring
+- no low-level face/edge/vertex modeling workflow
+
+For M2 and the first serious release, **Blender remains the owner of mesh authoring, UVs, skinning, and animation**, while **PolyBash owns module import, metadata authoring, assembly, validation, and export**.
 
 ## 2. Milestones
 
-### M0 - Planning complete
+### M0 - Planning and launch pack complete
 
 Done when:
-- PRD exists
-- architecture exists
+- PRD exists and matches the real product direction
+- architecture exists and matches the standalone desktop path
 - acceptance matrix exists
-- prompt pack exists
+- prompt pack and handoff docs exist
+- taskboard and runloop prompts are aligned
 
-### M1 - Walking skeleton complete (overnight target)
+### M1 - Walking skeleton complete
 
 Done when:
 - repo scaffold exists
 - contracts compile
-- desktop shell builds
+- standalone desktop shell builds
 - native document flow works
+- style packs load
+- assembly, deformation, material, and rig metadata paths exist
 - example projects validate
 - GLB export works on the canonical fighter fixture
 - report generation works
 - CI is green
 
-### M2 - Authoring MVP
+### M2 - Authoring MVP complete
+
+This is the first milestone where the product should stop feeling like a toy.
 
 Done when:
-- assembly workflow works across fighter, weapon, and prop
-- style packs and module browsing are usable
-- material zones and basic paint layers work
-- rig templates and sockets are present
-- connector attach and detach workflows are usable from the desktop shell
+- character and prop workflows are genuinely usable
+- module browsing is understandable and visual
+- visible undo/redo and action-history UX exist
+- visible transform/orientation aids exist in the viewport
+- visible connector and snap affordances exist
+- reusable module metadata authoring exists
+- Blender-authored modules can be imported and reused
+- multiple style packs can be enabled and browsed together
+- copy-on-write overrides for modules/materials/style-pack content exist
+- material/basic paint workflows are usable within a Blender-owned UV pipeline
+- validation/export UX is usable enough for real asset production
 
-### M3 - V1 complete
+### M3 - Production-ready retro asset system
 
 Done when:
-- characters, props, vehicles, and chunks are all supported
-- hybrid rigging exists
-- basic LLM-assisted structured editing exists
-- documentation and release packaging are complete
+- character and prop workflows are stable and fast
+- environment/world chunk workflows are serious and reusable
+- style-pack and module library workflows are robust
+- scripting/randomization exists for layout and parameter generation
+- content pipeline from Blender to PolyBash to GLB is well documented and repeatable
+- release packaging, docs, and onboarding are polished
 
 ## 3. Work packages
 
@@ -53,350 +83,253 @@ Done when:
 | WP-00 | Program setup | repo, taskboard, CI skeleton | none | trunk | P0 |
 | WP-01 | Contracts and schemas | Rust contracts, JSON Schema, TS bindings | WP-00 | contracts | P0 |
 | WP-02 | Example fixtures | `.zxmodel`, style pack, report examples | WP-01 | contracts | P0 |
-| WP-03 | Rust domain core | normalized project logic, command application | WP-01 | core | P0 |
+| WP-03 | Rust domain core | normalized project logic, command application, preview/apply | WP-01 | core | P0 |
 | WP-04 | Geometry ops | connector math, transforms, region params | WP-03 | core | P0 |
 | WP-05 | Validator | typed validation pipeline and report | WP-03, WP-04 | core | P0 |
 | WP-06 | Exporter | GLB export bundle | WP-03, WP-05 | core | P0 |
 | WP-07 | CLI | validate and export commands | WP-05, WP-06 | core | P0 |
-| WP-08 | Desktop bridge | Tauri command surface and typed desktop payloads | WP-03, WP-05, WP-06 | bridge | P0 |
+| WP-08 | Desktop bridge | Tauri command surface and typed payloads | WP-03, WP-05, WP-06 | bridge | P0 |
 | WP-09 | Desktop shell | buildable desktop app, state model, adapter seams | WP-00, WP-01, WP-08 | desktop | P0 |
-| WP-10 | Project workflow | create, open, save, style pack loading, native dialogs | WP-09 | desktop | P0 |
-| WP-11 | Assembly workflow | browse, add, remove, attach, and detach modules | WP-08, WP-09 | desktop | P0 |
+| WP-10 | Project workflow | create, open, save, style-pack loading, native dialogs | WP-09 | desktop | P0 |
+| WP-11 | Assembly workflow | browse, add, remove, attach, detach, mirror modules | WP-08, WP-09 | desktop | P0 |
 | WP-12 | Deformation workflow | region parameter editing | WP-08, WP-11 | desktop | P0 |
-| WP-13 | Material workflow | zone assignment and basic layer model | WP-08, WP-11 | desktop | P0 |
+| WP-13 | Material workflow | zone assignment, fill/decal model, material preview/apply | WP-08, WP-11 | desktop | P0 |
 | WP-14 | Rig metadata workflow | rig template and sockets | WP-08, WP-10 | desktop | P0 |
-| WP-15 | CI and quality gates | build, test, lint, and coverage pipeline | WP-00 | qa | P0 |
+| WP-15 | CI and quality gates | build, test, lint, coverage pipeline | WP-00 | qa | P0 |
 | WP-16 | Acceptance harness | fixture-driven acceptance suite | WP-05, WP-06, WP-10..WP-14 | qa | P0 |
-| WP-17 | Release docs | README, usage notes, examples | WP-15, WP-16 | trunk | P0 |
-| WP-18 | Viewport and gizmo hardening | direct manipulation, transform gizmos, mirror polish | WP-11, WP-12 | desktop | P1 |
-| WP-19 | Hybrid rigging | weighting modes and richer export | WP-14, WP-06 | core/desktop | P1 |
-| WP-20 | LLM command integration | prompt -> DSL -> preview/apply | WP-03, WP-08 | core/desktop | P1 |
-| WP-21 | Secondary delivery surfaces | optional WASM or web embedding parity | M1 | bridge | P2 |
+| WP-17 | Release docs and handoff | README, usage notes, gap/status docs | WP-15, WP-16 | trunk | P0 |
+| WP-18 | Module preview/browser | visual module browser, previews, category/tag browsing | WP-11 | desktop | P1 |
+| WP-19 | Undo/redo and history UX | visible undo, redo, history model and action stack | WP-11, WP-12, WP-13 | desktop | P1 |
+| WP-20 | Viewport gizmos and orientation | move/rotate/scale gizmos, orientation cube, clearer transform affordances | WP-11, WP-12 | desktop | P1 |
+| WP-21 | Connector visibility and snap UX | visible connector points, snap targets, stronger snap flows | WP-11, WP-20 | desktop | P1 |
+| WP-22 | Module metadata authoring | pivots, connectors, material zones, regions, sockets on reusable modules | WP-11, WP-13, WP-14 | desktop/core | P1 |
+| WP-23 | Blender handoff and module import | import pipeline for Blender-authored modules, handoff contract, canonical imported fixtures | WP-10, WP-11, WP-22 | pipeline | P1 |
+| WP-24 | Style-pack and reusable library workflow | multi-pack browsing, enable/disable packs, tagging, copy-on-write overrides, duplicated packs | WP-18, WP-22, WP-23 | desktop/pipeline | P1 |
+| WP-25 | Material strategy and texture boundary | material slot model, preview slots, Blender-owned UV contract, fixture/docs coverage | WP-13, WP-23 | desktop/core | P1 |
+| WP-26 | Character and prop production workflow | integrated first-class workflow for shipping characters, props, and weapons | WP-18..WP-25 | desktop/pipeline | P1 |
+| WP-27 | Environment and world chunk workflow | modular chunk assembly, prefab-oriented environment workflow, scene/chunk authoring | WP-18, WP-21, WP-24 | desktop | P2 |
+| WP-28 | Validation and export UX hardening | issue navigation, actionable report UX, export affordances, clearer production feedback | WP-05, WP-06, WP-16 | desktop/core | P1 |
+| WP-29 | Scripting and randomization layer | scatter/variant helpers, later Lua-style scripting, persistence of generated results | WP-24, WP-27 | desktop/core | P2 |
 
-## 4. Detailed task decomposition
+## 4. Detailed work decomposition
 
-## WP-00 Program setup
-
-Tasks:
-- create monorepo layout
-- choose package manager and Rust workspace structure
-- configure formatting and linting
-- establish CI workflow skeleton
-- add AGENTS and docs structure
-
-Done criteria:
-- `cargo test --workspace` runs
-- `pnpm test` runs
-- CI starts on push and PR
-- docs folder wired in
-
-## WP-01 Contracts and schemas
+### WP-18 Module preview/browser
 
 Tasks:
-- define ids, enums, and types in Rust
-- define version block
-- generate JSON Schema
-- define report types
-- generate TS type bindings or runtime validators
+- add a dedicated module preview/browser panel
+- show thumbnail or proxy previews
+- show names, categories, and tags
+- support multiple enabled style packs
+- make placement understandable before the user commits
 
 Done criteria:
-- valid examples deserialize
-- invalid examples fail
-- schema generation is reproducible
-- contract tests are green
+- users can understand a module before placing it
+- preview browsing is covered in desktop tests
+- browser supports category/tag-based discovery
 
-## WP-02 Example fixtures
+### WP-19 Undo/redo and history UX
 
 Tasks:
-- canonical fighter project
-- canonical style pack
-- canonical validation report
-- canonical command DSL examples
+- surface visible undo and redo controls
+- show actual edit history, not just hidden snapshot state
+- support multi-step recovery
+- keep preview/apply flows consistent with history
 
 Done criteria:
-- examples are used in tests
-- examples match docs
-- examples validate under schema
+- multi-step undo/redo is covered in desktop tests
+- common editing mistakes can be recovered from without reload
+- history labels are understandable to users
 
-## WP-03 Rust domain core
+### WP-20 Viewport gizmos and orientation
 
 Tasks:
-- load and save model
-- normalize project
-- apply edit commands
-- maintain invariants
-- prepare export-ready scene model
+- add world orientation widget
+- add visible move, rotate, and scale gizmos
+- support clearer transform affordances than hidden modifier drags
+- preserve deterministic command-backed transforms
 
 Done criteria:
-- domain round-trip tests pass
-- invariant failures are typed
-- command application can preview and apply
+- gizmo-driven transforms are covered in tests where practical
+- users can discover transform tools without prior knowledge of hidden shortcuts
 
-## WP-04 Geometry ops
+### WP-21 Connector visibility and snap UX
 
 Tasks:
-- connector compatibility logic
-- transform compose and decompose helpers
-- region parameter math
-- metrics helpers
+- render connector points in the viewport
+- render visible snap targets and connector highlights
+- allow toggled visibility for connectors
+- improve automatic snapping while preserving manual fallback
 
 Done criteria:
-- property tests exist
-- golden tests exist for representative cases
-- deterministic math paths are documented
+- users can inspect snap/connect locations directly
+- automatic snapping works for common cases
+- manual fallback exists when automatic choice is wrong
 
-## WP-05 Validator
+### WP-22 Module metadata authoring
 
 Tasks:
-- schema validity checks
-- style pack compatibility checks
-- budget calculations
-- connector integrity
-- metadata completeness
-- report formatting
+- author and edit pivots
+- author and edit connectors
+- author material zones
+- author deformation regions
+- author sockets
 
 Done criteria:
-- every validation rule has at least one positive and one negative test
-- errors include codes and paths
-- reports are stable snapshots
+- reusable modules can be annotated inside PolyBash
+- metadata persists in reusable module/style-pack content
+- metadata authoring is validated and test-covered
 
-## WP-06 Exporter
+### WP-23 Blender handoff and module import
 
 Tasks:
-- derive normalized scene payload
-- build GLB artifact
-- attach metadata and extras as needed
-- emit export stats
+- define import contract for Blender-authored source meshes
+- import modules from Blender-friendly interchange formats
+- preserve pivots/origin and expected metadata seams
+- provide canonical imported-module fixtures
+- document the handoff path
 
 Done criteria:
-- fighter example exports
-- repeated export is deterministic
-- export fails on invalid projects
-- exported artifact is referenced by snapshot or fixture tests
+- a Blender-authored module can be imported and used in the desktop shell
+- import contract is documented and repeatable
+- pipeline does not require a Blender addon to be viable
 
-## WP-07 CLI
+### WP-24 Style-pack and reusable library workflow
 
 Tasks:
-- `validate` command
-- `export` command
-- `inspect` or `report` command
-- fixture runner convenience commands
+- enable multiple style packs at once
+- browse by tags/categories across packs
+- support locked base packs/modules
+- support copy-on-write local overrides
+- support duplicated packs for local customization
 
 Done criteria:
-- CLI help exists
-- CLI commands are integration-tested
-- errors are non-cryptic
+- users can treat style packs as real reusable production libraries
+- local overrides do not destroy base content
+- library browsing remains understandable at scale
 
-## WP-08 Desktop bridge
+### WP-25 Material strategy and Blender-owned UV boundary
 
 Tasks:
-- expose core functions through Tauri commands
-- define desktop-safe payloads
-- add desktop bridge tests
-- wire error translation
+- define supported in-app material slot model
+- support a few useful preview/authoring slots
+- formalize the Blender-owned UV contract in docs and fixtures
+- keep PolyBash focused on material assignment, fill/decal, and preview rather than unwrap editing
 
 Done criteria:
-- the desktop shell can validate and export through the bridge in tests
-- add, remove, edit, and connector workflows cross the bridge with typed responses
-- bridge behavior reuses the same Rust services exercised by the CLI
+- docs and fixtures make the UV boundary explicit
+- material workflow is useful without pretending to be a full UV editor
 
-## WP-09 Desktop shell
+### WP-26 Character and prop production workflow
 
 Tasks:
-- desktop application entry point
-- state store
-- desktop adapters and bridge clients
-- panel layout placeholders
-- command dispatch pipeline
+- integrate module browser, gizmos, history, connectors, import, and materials into one coherent workflow
+- optimize for shipping characters, weapons, and props
+- provide showcase/example starter templates without overfitting the product to them
 
 Done criteria:
-- desktop shell builds
-- controller or projection tests pass
-- desktop adapter seams are mockable
+- a user can make a production-credible character or prop workflow without dropping into low-level mesh editing
+- the workflow feels like a real product rather than a shell demo
 
-## WP-10 Project workflow
+### WP-27 Environment and world chunk workflow
 
 Tasks:
-- new project
-- native open and save project flow
-- style pack load
-- validation panel integration
+- support modular environment/chunk assembly
+- support prefab-oriented world authoring
+- support reusable architectural/environment kits
+- reserve full scene-editor ambitions for later hardening
 
 Done criteria:
-- project workflow tested headlessly
-- serialized output stable
-- validation surfaced in desktop state and inspectors
+- environments are serious second-class workflows, not ignored
+- environment authoring reuses the same module/library model as characters and props
 
-## WP-11 Assembly workflow
+### WP-28 Validation and export UX hardening
 
 Tasks:
-- module browsing
-- add and remove modules
-- connector attach and detach
-- mirror placement
+- improve report visibility and navigation
+- make export flow clearer and less opaque
+- expose production-relevant metrics and validation feedback in the shell
 
 Done criteria:
-- can assemble the fighter example from modules
-- connector rules are enforced
-- removal prunes dependent connector and decal state
-- mirrored module instances are handled
+- validation and export feel production-facing, not like hidden backend calls
+- users can understand why an asset is blocked or valid
 
-## WP-12 Deformation workflow
+### WP-29 Scripting and randomization layer
 
 Tasks:
-- region control UI model
-- update command generation
-- preview and apply
-- persistence to project file
+- add light scatter/variant helpers first
+- later add scriptable generation hooks
+- allow generated results to be persisted back into editable content
 
 Done criteria:
-- representative regions are editable
-- values clamp by style pack limits
-- regression tests cover persistence
-
-## WP-13 Material workflow
-
-Tasks:
-- material zone assignment
-- palette application
-- paint layer model
-- basic decal hook
-
-Done criteria:
-- zones are assignable
-- palette constraints validate
-- report includes texture and material usage
-
-## WP-14 Rig metadata workflow
-
-Tasks:
-- rig template selection
-- socket assignment
-- export metadata handoff
-
-Done criteria:
-- fighter example can bind a rig template
-- socket metadata exports
-- validation catches missing required bones or sockets
-
-## WP-15 CI and quality gates
-
-Tasks:
-- linting
-- formatting
-- test jobs
-- coverage jobs
-- artifact upload
-
-Done criteria:
-- failing coverage blocks merge
-- both Rust and TS gates run
-- examples are checked in CI
-
-## WP-16 Acceptance harness
-
-Tasks:
-- implement acceptance scenarios
-- link requirements to tests
-- create smoke checklist
-- add release gate summary
-
-Done criteria:
-- every P0 requirement maps to a test or documented manual check
-- acceptance report is easy to review
-
-## WP-17 Release docs
-
-Tasks:
-- usage notes
-- contribution guide
-- examples walkthrough
-- gap report format
-
-Done criteria:
-- newcomer can bootstrap repo
-- fixtures are documented
-- overnight output is reviewable
+- procedural helpers accelerate production instead of creating opaque non-editable output
+- any script-generated result can be saved back into normal editable project/module data
 
 ## 5. Parallelization guidance
 
-### Parallel lane A - contracts
+### Parallel lane A - core and contracts
 
-Work on WP-01 and WP-02 first.
+Work on WP-01 through WP-06 first, then only revisit core when desktop or pipeline work exposes real gaps.
 
-### Parallel lane B - core
+### Parallel lane B - desktop usability
 
-Begin WP-03 and WP-04 once core contracts settle.
+Prioritize:
+1. WP-19 undo/redo UX
+2. WP-20 viewport gizmos/orientation
+3. WP-21 connector visibility and snap UX
+4. WP-18 module preview/browser
 
-### Parallel lane C - desktop bridge and shell
+These are the highest-value lanes for turning the shell into something people can tolerate using.
 
-Begin WP-08 and WP-09 early using mocked data if necessary, then re-sync after WP-01.
+### Parallel lane C - content pipeline
 
-### Parallel lane D - QA
+After the first usability blockers start landing, prioritize:
+1. WP-23 Blender handoff and module import
+2. WP-22 module metadata authoring
+3. WP-24 style-pack/library workflow
+4. WP-25 material strategy boundary
 
-Begin WP-15 immediately, then WP-16 as soon as acceptance scenarios stabilize.
+### Parallel lane D - workflow integration
 
-### Merge order
+Use WP-26 and WP-28 to unify the earlier work into something production-credible.
 
-1. trunk and bootstrap
-2. contracts
-3. core math and domain
-4. validator and export
-5. desktop bridge and shell
-6. workflows and acceptance harness
-7. hardening
+### Parallel lane E - later growth
 
-## 6. Overnight execution sequence
+Reserve WP-27 and WP-29 for later waves once characters/props and content pipeline are clearly working.
 
-### Phase O1
-- WP-00
-- WP-01
-- WP-15
+## 6. 24-72 hour autonomous run guidance
 
-### Phase O2
-- WP-02
-- WP-03
-- WP-08
-- WP-09
+### First 24 hours
 
-### Phase O3
-- WP-04
-- WP-05
-- WP-10
-- WP-11
+Target the highest product-usability blockers:
 
-### Phase O4
-- WP-06
-- WP-07
-- WP-12
-- WP-13
-- WP-14
+1. WP-19 undo/redo UX
+2. WP-20 viewport gizmos/orientation
+3. WP-21 connector visibility
+4. WP-18 module preview/browser
 
-### Phase O5
-- WP-16
-- WP-17
+### 24 to 48 hours
 
-## 7. Current implementation notes
+Target the missing production pipeline:
 
-The current repository already contains meaningful progress against M1:
+1. WP-23 Blender handoff and module import
+2. WP-22 module metadata authoring
+3. WP-24 style-pack/library workflow
+4. WP-25 material strategy boundary
 
-- the desktop shell builds
-- native document dialogs exist
-- module add and remove exists
-- typed transform edits exist through the shared command path
-- connector attach and detach exists
-- material and region edits exist through typed Rust-backed commands
-- rig template and socket metadata flows exist
-- validation and export are Rust-owned and reachable from the desktop shell
+### 48 to 72 hours
 
-The largest remaining gaps before a stronger standalone MVP are transform gizmos, richer direct manipulation, mirror workflow coverage, and deeper undo and diff semantics.
+Unify, validate, and harden:
 
-## 8. Descoping order if time or complexity explodes
+1. WP-26 character/prop production workflow
+2. WP-28 validation/export UX
+3. docs, examples, acceptance coverage, and honest handoff
 
-Descoping order should preserve the walking skeleton:
+## 7. Descoping order if time or complexity explodes
 
-1. drop advanced painting before dropping material zones
-2. drop smooth rigging before dropping rig metadata
-3. drop extra asset categories before dropping the fighter workflow
-4. drop live LLM integration before dropping the command DSL
-5. drop desktop polish before dropping headless correctness
+Keep the product useful by dropping in this order:
+
+1. delay environment/world chunk workflow before weakening character/prop workflow
+2. delay scripting/randomization before weakening module import and library workflows
+3. delay richer paint/texturing before weakening material assignment and preview
+4. delay broader preview UX before weakening undo/redo or gizmo discoverability
+5. never trade away the Blender-owned UV boundary just to claim broader scope
