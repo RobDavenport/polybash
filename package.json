@@ -3,10 +3,13 @@
   "private": true,
   "packageManager": "pnpm@10.0.0",
   "scripts": {
-    "build": "pnpm --dir plugin build",
-    "test": "pnpm --dir plugin test",
-    "lint": "pnpm --dir plugin lint",
-    "typecheck": "pnpm --dir plugin typecheck",
-    "ci": "pnpm lint && pnpm typecheck && pnpm test"
+    "build": "corepack pnpm --dir plugin build",
+    "build:desktop": "corepack pnpm --dir desktop build",
+    "test": "corepack pnpm --dir plugin test",
+    "test:desktop": "corepack pnpm --dir desktop test",
+    "lint": "corepack pnpm --dir plugin lint",
+    "typecheck": "corepack pnpm --dir plugin typecheck",
+    "typecheck:desktop": "corepack pnpm --dir desktop typecheck",
+    "ci": "corepack pnpm lint && corepack pnpm typecheck && corepack pnpm test && corepack pnpm typecheck:desktop && corepack pnpm test:desktop && corepack pnpm build:desktop"
   }
 }

@@ -30,6 +30,14 @@ pub struct Transform {
     pub scale: Vec3,
 }
 
+#[derive(Debug, Clone, Serialize, Deserialize, PartialEq, Eq)]
+#[serde(rename_all = "snake_case")]
+pub enum TransformField {
+    Position,
+    Rotation,
+    Scale,
+}
+
 #[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
 pub struct ConnectorAttachment {
     #[serde(rename = "localConnector")]
@@ -302,6 +310,12 @@ impl ValidationReport {
 #[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
 #[serde(tag = "op", rename_all = "snake_case")]
 pub enum EditCommand {
+    SetTransform {
+        #[serde(rename = "instanceId")]
+        instance_id: String,
+        field: TransformField,
+        value: Vec3,
+    },
     SetRegionParam {
         #[serde(rename = "instanceId")]
         instance_id: String,

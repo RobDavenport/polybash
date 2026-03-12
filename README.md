@@ -2,14 +2,14 @@
 
 Ready-made monorepo scaffold for building **PolyBash** with Codex.
 
-This repository is not the finished product. It is the **build-ready starting point**:
-- the full spec pack is already embedded
-- the monorepo layout is already created
-- Rust and TypeScript boundaries are already defined
-- canonical fixtures/examples are already seeded
-- CI, prompts, and launch instructions are already in place
+This repository is not the finished product. It is the build-ready starting point for a **standalone desktop low-poly modeling tool**:
+- the full spec pack is embedded
+- the monorepo layout is created
+- Rust and TypeScript boundaries are defined
+- canonical fixtures and examples are seeded
+- CI, prompts, and launch instructions are in place
 
-The intended result is that you can drop this into GitHub, point Codex at it, and have it work from a repo that already knows what it is supposed to become.
+The intended result is that you can point Codex or a subagent at a repo that already knows what it is trying to become.
 
 ## What PolyBash is
 
@@ -24,6 +24,18 @@ It sits between **Asset Forge** and **Blender**:
 - deterministic GLB export
 - strict validation for Nethercore ZX-style constraints
 
+## Active product direction
+
+The active product direction is a **standalone Tauri desktop app**.
+
+Current architecture:
+- desktop shell under `desktop/`
+- Tauri Rust backend under `desktop/src-tauri/`
+- Rust core crates remain the source of truth for contracts, domain rules, validation, and export
+- TypeScript and web UI drive the app shell, inspector workflows, and viewport orchestration
+
+The old `plugin/` path still exists in the repository as legacy scaffolding, but it is no longer the primary destination for product work.
+
 ## Overnight target
 
 The target for the first serious Codex run is **M1: walking skeleton**, not the full long-term product.
@@ -35,7 +47,7 @@ M1 means:
 - validator works
 - export path works
 - CLI works
-- plugin shell works
+- desktop shell works
 - project round-trip works
 - release gate and gap report exist
 
@@ -46,7 +58,8 @@ M1 means:
 - `docs/` for PRD, architecture, WBS, quality gates, acceptance, and risk control
 - `codex/` for orchestration, prompts, taskboard, and runbook
 - `crates/` Rust workspace scaffold
-- `plugin/` TypeScript Blockbench plugin scaffold
+- `desktop/` standalone desktop shell and Tauri backend
+- `plugin/` legacy scaffold from the pre-standalone direction
 - `contracts/generated/` starter schemas
 - `fixtures/` valid and invalid fixture set
 - `examples/` canonical example assets
@@ -77,24 +90,25 @@ Codex should read files in this order:
 
 ```text
 .
-├─ README.md
-├─ AGENTS.md
-├─ MASTER_SPEC.md
-├─ 00-START-HERE.md
-├─ docs/
-├─ codex/
-├─ contracts/generated/
-├─ crates/
-├─ plugin/
-├─ fixtures/
-├─ examples/
-├─ .github/workflows/ci.yml
-├─ .vscode/mcp.json
-├─ Cargo.toml
-├─ package.json
-├─ pnpm-workspace.yaml
-├─ tsconfig.base.json
-└─ justfile
+|- README.md
+|- AGENTS.md
+|- MASTER_SPEC.md
+|- 00-START-HERE.md
+|- docs/
+|- codex/
+|- contracts/generated/
+|- crates/
+|- desktop/
+|- plugin/
+|- fixtures/
+|- examples/
+|- .github/workflows/ci.yml
+|- .vscode/mcp.json
+|- Cargo.toml
+|- package.json
+|- pnpm-workspace.yaml
+|- tsconfig.base.json
+`- justfile
 ```
 
 ## Root commands
@@ -109,6 +123,109 @@ just export-example
 
 If you do not use `just`, the same intent exists in the root `package.json` and Cargo workspace commands.
 
+## Desktop build and test commands
+
+```bash
+corepack pnpm --dir desktop typecheck
+corepack pnpm --dir desktop test
+corepack pnpm --dir desktop build
+cargo build -p polybash-desktop
+cargo test -p polybash-desktop
+```
+
+## Run the desktop app
+
+Install the workspace dependencies first:
+
+```bash
+corepack pnpm install
+```
+
+To launch the current desktop app from the repo root:
+
+```bash
+corepack pnpm --dir desktop build
+cargo run --manifest-path desktop/src-tauri/Cargo.toml
+```
+
+That path uses the built frontend assets in `desktop/dist` and starts the current Tauri desktop shell.
+
+If you already have the Tauri CLI installed and want a live dev loop instead of a one-shot build:
+
+```bash
+cd desktop
+cargo tauri dev
+```
+
+## Try the app
+
+Once the desktop window opens:
+
+1. Click `Load Canonical Fighter` to load the seeded fighter fixture, or `New Fighter` to generate a fresh template from the current style pack.
+2. Click a module chip in the viewport strip, such as `torso_01` or `weapon_01`, to inspect it.
+3. Drag in the viewport to move the selected module. Hold `Shift` while dragging to scale uniformly, or hold `Alt` while dragging to rotate around Z.
+4. Use the inspector to change transforms, material assignments, region sliders, rig metadata, connector attachments, snap targets, paint fills, decals, and mirror/remove actions.
+5. Use `Validate` to run the Rust validator and `Export Preview` to confirm the GLB export path.
+
+The fastest way to understand the current shell is to load the canonical fighter, select `weapon_01`, try a snap action, change a material, preview/apply that material change, then run validation and export.
+
+## Implemented desktop features
+
+- native open/save dialogs
+- canonical load plus explicit path-based load
+- live proxy viewport rendering with module selection
+- pointer-driven viewport translate
+- `Shift` + drag uniform viewport scaling with safe minimum clamping
+- `Alt` + drag viewport rotation around Z
+- style-pack-backed module add/remove
+- command-backed transform edits from the inspector
+- bounded history helpers with deep-cloned past/future snapshots and tested redo semantics; the current shell still exposes single-step undo for the latest successful document-changing action
+- mirrored module creation from the inspector with symmetry-aware counterpart naming
+- connector attach and detach from the inspector
+- backend snap commands through the Tauri bridge plus a minimal inspector snap action with deterministic compatible-target suggestions
+- command-backed region and material edits
+- minimal desktop-native fill and decal authoring from the inspector through Rust-backed Tauri commands
+- a narrow material-assignment preview/apply/cancel UI in the inspector backed by the existing preview bridge
+- rig template selection and socket metadata edits
+- deterministic preview/diff metadata for structured edit commands through the Tauri bridge, including the registered desktop preview invoke and current material-preview UI slice
+- Rust-owned validation and export preview through the Tauri bridge
+
+## Current limitations
+
+- preview/apply UI is currently narrow and only covers material assignment
+- the visible desktop history UX still centers on undo; redo exists in helper/model coverage, not as a surfaced shell control
+- snap UX is still minimal and inspector-driven rather than a fuller viewport-first workflow
+- paint support is still limited to the walking-skeleton fill/decal path, not richer freehand tooling
+- the legacy `plugin/` path still exists in the repo as historical scaffolding, but it is not the product path
+- manual desktop smoke and broader end-to-end workflow coverage are still thinner than the eventual product target
+
+Clean-build note:
+- the desktop frontend now builds to `desktop/dist`
+- the Tauri config points at that output directly
+- CI runs the desktop `typecheck`, `test`, and `build` steps before the Tauri Rust test lane so clean builds stay reproducible
+- clean `cargo test --manifest-path desktop/src-tauri/Cargo.toml` still expects the frontend build artifacts to exist first because Tauri embeds them at compile time
+
+Current desktop frontend evidence includes:
+- `corepack pnpm --dir desktop test`
+- 6 Vitest files / 32 tests, including `desktop/src/materialPreviewState.spec.ts`
+
+## CLI commands
+
+The headless command surface lives in `polybash-cli`.
+
+```bash
+cargo run -p polybash-cli -- validate \
+  --project fixtures/projects/valid/fighter_basic.zxmodel.json \
+  --stylepack fixtures/stylepacks/valid/zx_fighter_v1.stylepack.json
+
+cargo run -p polybash-cli -- export \
+  --project fixtures/projects/valid/fighter_basic.zxmodel.json \
+  --stylepack fixtures/stylepacks/valid/zx_fighter_v1.stylepack.json \
+  --out out/example
+```
+
+These flows are also covered by CLI integration tests under `crates/polybash-cli/tests/`.
+
 ## First prompt to paste into Codex
 
 Use the contents of `codex/prompts/00-LAUNCH-THIS-REPO.md`.
@@ -121,10 +238,22 @@ That file is written to force:
 - honest gap reporting
 - zero architecture drift
 
+## Subagent handoff
+
+For the next Codex or subagent pass, use this sequence:
+
+1. read `codex/STATUS.md`
+2. read `codex/ACCEPTANCE_SUMMARY.md`
+3. read `codex/GAP_REPORT.md`
+4. choose the smallest remaining task id from the gap report
+5. inject the matching prompt from `codex/prompts/`
+
+This keeps follow-up passes anchored to current repo reality instead of the original plugin scaffold assumptions.
+
 ## Notes for the agent
 
-- The Rust side owns contracts, normalization, validation, export, and deterministic transforms.
-- The TypeScript side owns plugin shell, host integration, controllers, and state.
+- Rust owns contracts, normalization, validation, export, and deterministic transforms.
+- The TypeScript desktop shell owns the app chrome, native integration adapters, inspector workflows, and viewport orchestration.
 - `.zxmodel` is the authoring source of truth.
 - `.glb` is export output.
 - Validation is a product feature, not a cleanup step.
@@ -132,11 +261,11 @@ That file is written to force:
 
 ## Current state of the code
 
-This repo includes a **starter implementation skeleton** and fixture data.
+This repo includes a real standalone desktop walking skeleton plus fixture data.
 Some parts are intentionally thin.
 That is by design.
 
-The goal is not to pretend the product is already built.
+The goal is not to pretend the product is already complete.
 The goal is to remove repo-setup friction so Codex can spend its time on real implementation work.
 
 ## Suggested success criterion for the first Codex run
@@ -144,9 +273,10 @@ The goal is to remove repo-setup friction so Codex can spend its time on real im
 By the end of the first serious pass, you should have:
 - canonical fixtures under test
 - a validator report generated from the sample fighter
-- a deterministic placeholder GLB export path
+- a deterministic GLB export path
 - CLI validate/export commands
-- plugin controllers talking to a core facade
+- a desktop shell talking to the Rust bridge
+- native desktop document flows and constrained inspector edits, including transforms, direct-manipulation translate, and uniform scale
 - CI reflecting the real commands Codex must keep green
 
 ## Do not do this

@@ -1,0 +1,392 @@
+:root {
+  --ink: #0f1720;
+  --muted: #667085;
+  --panel: #fffaf1;
+  --panel-strong: #f5ead7;
+  --line: #ddcfb8;
+  --accent: #17624a;
+  --accent-soft: #d6eadf;
+  --accent-warm: #ef7d32;
+  --bg: linear-gradient(180deg, #f4efe5 0%, #ebe3d4 100%);
+}
+
+* {
+  box-sizing: border-box;
+}
+
+body {
+  margin: 0;
+  font-family: "Segoe UI", "Helvetica Neue", sans-serif;
+  color: var(--ink);
+  background: var(--bg);
+}
+
+button,
+input {
+  font: inherit;
+}
+
+button {
+  border: 0;
+  border-radius: 999px;
+  padding: 0.8rem 1rem;
+  font-weight: 700;
+  color: white;
+  background: var(--accent);
+  cursor: pointer;
+}
+
+button[disabled] {
+  cursor: not-allowed;
+  opacity: 0.45;
+}
+
+input {
+  width: 100%;
+  padding: 0.7rem 0.9rem;
+  border: 1px solid var(--line);
+  border-radius: 14px;
+  background: rgba(255, 255, 255, 0.7);
+}
+
+.secondary-button {
+  color: var(--ink);
+  background: var(--panel-strong);
+}
+
+.shell {
+  min-height: 100vh;
+  display: grid;
+  grid-template-columns: 360px 1fr;
+}
+
+.sidebar {
+  padding: 2rem;
+  border-right: 1px solid var(--line);
+  background: rgba(255, 250, 241, 0.88);
+  backdrop-filter: blur(10px);
+}
+
+.workspace {
+  display: grid;
+  grid-template-columns: minmax(0, 1.7fr) minmax(320px, 0.95fr);
+  gap: 1rem;
+  padding: 1rem;
+}
+
+.workspace-side {
+  display: grid;
+  gap: 1rem;
+}
+
+.viewport-card,
+.panel {
+  min-height: 240px;
+  padding: 1.25rem;
+  border: 1px solid var(--line);
+  border-radius: 24px;
+  background: var(--panel);
+  box-shadow: 0 12px 30px rgba(15, 23, 32, 0.08);
+}
+
+.viewport-card {
+  display: grid;
+  gap: 1rem;
+  align-content: start;
+  background:
+    radial-gradient(circle at top right, rgba(23, 98, 74, 0.16), transparent 35%),
+    var(--panel);
+}
+
+.viewport-copy {
+  display: grid;
+  gap: 0.5rem;
+}
+
+.viewport-summary {
+  margin: 0;
+  color: var(--muted);
+}
+
+.viewport-hint {
+  margin: -0.35rem 0 0;
+  padding: 0.7rem 0.9rem;
+  border: 1px solid rgba(23, 98, 74, 0.12);
+  border-radius: 16px;
+  background: rgba(255, 250, 241, 0.88);
+  color: var(--muted);
+  font-size: 0.9rem;
+}
+
+.viewport-stage {
+  min-height: 460px;
+  border: 1px solid rgba(23, 98, 74, 0.14);
+  border-radius: 24px;
+  overflow: hidden;
+  background:
+    linear-gradient(180deg, rgba(255, 255, 255, 0.72), rgba(245, 234, 215, 0.92));
+}
+
+.viewport-canvas {
+  display: block;
+  width: 100%;
+  height: 100%;
+  cursor: grab;
+}
+
+.viewport-canvas.dragging {
+  cursor: grabbing;
+}
+
+.viewport-canvas.dragging-scale {
+  cursor: ns-resize;
+}
+
+.viewport-canvas.dragging-rotate {
+  cursor: ew-resize;
+}
+
+.viewport-empty {
+  min-height: 460px;
+  display: grid;
+  place-content: center;
+  gap: 0.5rem;
+  text-align: center;
+  color: var(--muted);
+}
+
+.eyebrow {
+  margin: 0 0 0.35rem;
+  font-size: 0.75rem;
+  font-weight: 800;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--muted);
+}
+
+.lede {
+  color: var(--muted);
+  line-height: 1.5;
+}
+
+.path-form {
+  display: grid;
+  gap: 0.85rem;
+  margin: 1.1rem 0;
+}
+
+.path-form label {
+  display: grid;
+  gap: 0.35rem;
+}
+
+.path-input-row {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  gap: 0.5rem;
+}
+
+.path-form span,
+.path-note,
+.empty-note {
+  color: var(--muted);
+  font-size: 0.9rem;
+}
+
+.actions,
+.module-strip {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.6rem;
+}
+
+.status {
+  margin-top: 1.25rem;
+  padding: 1rem;
+  border-radius: 18px;
+  background: var(--accent-soft);
+}
+
+.status span {
+  display: block;
+  font-size: 0.75rem;
+  text-transform: uppercase;
+  letter-spacing: 0.12em;
+  color: var(--muted);
+}
+
+.status-error {
+  margin: 0.6rem 0 0;
+  color: #7c2d12;
+  line-height: 1.45;
+}
+
+.inspector-actions {
+  margin-top: 0.75rem;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.6rem;
+}
+
+.danger-button {
+  background: #9f3b31;
+}
+
+.module-chip {
+  display: grid;
+  gap: 0.15rem;
+  align-items: start;
+  padding: 0.8rem 0.95rem;
+  border: 1px solid transparent;
+  border-radius: 20px;
+  background: var(--panel-strong);
+  color: var(--ink);
+}
+
+.module-chip span {
+  color: var(--muted);
+  font-size: 0.82rem;
+}
+
+.module-chip.selected {
+  border-color: rgba(239, 125, 50, 0.32);
+  background: rgba(239, 125, 50, 0.14);
+}
+
+.detail-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 0.85rem;
+  margin-top: 0.5rem;
+}
+
+.detail-label {
+  display: block;
+  margin-bottom: 0.2rem;
+  font-size: 0.75rem;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--muted);
+}
+
+.inspector-block {
+  margin-top: 1rem;
+}
+
+.inspector-block h3 {
+  margin: 0 0 0.5rem;
+  font-size: 1rem;
+}
+
+.transform-grid {
+  display: grid;
+  gap: 0.75rem;
+}
+
+.transform-row {
+  display: grid;
+  gap: 0.35rem;
+}
+
+.transform-inputs {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 0.5rem;
+}
+
+.transform-axis {
+  display: grid;
+  gap: 0.25rem;
+}
+
+.transform-axis span {
+  font-size: 0.72rem;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--muted);
+}
+
+.detail-list,
+.issue-list {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.detail-list li,
+.issue-list li {
+  padding: 0.75rem 0;
+  border-top: 1px solid var(--line);
+  display: grid;
+  gap: 0.25rem;
+}
+
+.detail-list select {
+  width: 100%;
+  padding: 0.6rem 0.75rem;
+  border: 1px solid var(--line);
+  border-radius: 12px;
+  background: rgba(255, 255, 255, 0.78);
+}
+
+.region-control {
+  display: grid;
+  gap: 0.4rem;
+}
+
+.region-control input[type="range"] {
+  width: 100%;
+}
+
+.socket-form {
+  display: grid;
+  gap: 0.75rem;
+}
+
+.connector-control {
+  display: grid;
+  gap: 0.4rem;
+}
+
+.library-item {
+  grid-template-columns: minmax(0, 1fr) auto;
+  align-items: center;
+  gap: 0.75rem;
+}
+
+.library-item span {
+  color: var(--muted);
+  font-size: 0.88rem;
+}
+
+.library-add {
+  padding: 0.65rem 0.9rem;
+  white-space: nowrap;
+}
+
+@media (max-width: 1100px) {
+  .shell {
+    grid-template-columns: 1fr;
+  }
+
+  .workspace {
+    grid-template-columns: 1fr;
+  }
+}
+
+@media (max-width: 720px) {
+  .detail-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .transform-inputs {
+    grid-template-columns: 1fr;
+  }
+
+  .viewport-stage,
+  .viewport-empty {
+    min-height: 320px;
+  }
+}

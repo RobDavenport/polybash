@@ -2,17 +2,18 @@
 
 ## 1. Architecture summary
 
-PolyBash is a **hybrid editor + deterministic core** system.
+PolyBash is a **standalone desktop editor + deterministic core** system.
 
-- **Editor host:** Blockbench plugin
-- **Plugin layer:** TypeScript
+- **Editor shell:** standalone desktop application
+- **Desktop UI layer:** TypeScript + web UI
+- **Desktop bridge:** Tauri commands into Rust services
 - **Core domain + contracts + export + validation:** Rust
 - **Primary authoring format:** `.zxmodel`
 - **Export target:** `.glb`
-- **Core distribution targets:** native CLI + WebAssembly bridge
+- **Core distribution targets:** native CLI + desktop bridge + optional WebAssembly bridge
 - **Headless validation target:** CI-friendly command line
 
-The architecture deliberately avoids turning the plugin host into the source of truth. The plugin is the interaction layer. The Rust core owns contracts, normalization, validation, and export semantics.
+The architecture deliberately avoids turning the desktop shell into the source of truth. The desktop UI is the interaction layer. The Rust core owns contracts, normalization, validation, command semantics, and export behavior.
 
 ## 2. Design principles
 
@@ -21,11 +22,11 @@ The architecture deliberately avoids turning the plugin host into the source of 
    - GLB is output, not the editable source of truth.
 
 2. **Deterministic core**
-   - export, validation, and contract logic must live in Rust
-   - the same behavior should be available to CLI and plugin via shared core
+   - export, validation, and contract logic live in Rust
+   - the same behavior should be available to CLI and desktop shell via the shared core
 
 3. **Headless first**
-   - anything critical must be testable without the Blockbench GUI host
+   - anything critical must be testable without the desktop GUI running
 
 4. **Constrained editing**
    - the domain model is module-based and region-based, not arbitrary topology-based
@@ -37,12 +38,12 @@ The architecture deliberately avoids turning the plugin host into the source of 
 
 ```mermaid
 flowchart LR
-  U[User] --> BB[Blockbench Plugin UI]
-  BB --> CTRL[TS Controllers + Host Adapters]
-  CTRL --> WASM[Rust Core via WASM]
-  WASM --> DOM[Domain Rules]
-  WASM --> VAL[Validator]
-  WASM --> EXP[GLB Exporter]
+  U[User] --> UI[Desktop UI Shell]
+  UI --> VM[TS View Models and Workflow Modules]
+  VM --> TAURI[Tauri Command Bridge]
+  TAURI --> DOM[Domain Rules]
+  TAURI --> VAL[Validator]
+  TAURI --> EXP[GLB Exporter]
   DOM --> ZX[.zxmodel]
   VAL --> RPT[asset.report.json]
   EXP --> GLB[asset.glb]
@@ -53,17 +54,17 @@ flowchart LR
 
 ## 4. System responsibilities
 
-### 4.1 Blockbench plugin responsibilities
-- panels and UI commands
-- library browsing and category filters
-- host scene interaction
-- transform controls
-- edit orchestration
-- loading/saving project data to/from `.zxmodel`
-- calling the Rust/WASM bridge for validation and export
-- displaying validation results
+### 4.1 Desktop shell responsibilities
+
+- document creation, open, and save flows
+- panels, inspectors, module browsing, and workflow commands
+- viewport interaction, selection, and gizmo orchestration
+- edit orchestration and UI state
+- calling Rust services through the desktop bridge
+- surfacing validation results, export feedback, and actionable errors
 
 ### 4.2 Rust core responsibilities
+
 - contract types and schema generation
 - domain normalization
 - connector compatibility checks
@@ -75,56 +76,87 @@ flowchart LR
 - structured command DSL validation for LLM edits
 
 ### 4.3 CLI responsibilities
+
 - batch validate
 - batch export
 - headless fixture tests
 - CI integration
 - developer diagnostics
 
-## 5. Repository structure
+### 4.4 Desktop bridge responsibilities
+
+- narrow, versioned command surface between UI and Rust
+- input and output serialization at the process boundary
+- typed error translation into desktop-safe responses
+- reuse of the same core services exercised by the CLI
+
+## 5. Current implemented desktop workflows
+
+The current standalone walking skeleton already includes:
+
+- native open and save dialogs
+- canonical load and explicit path-based load
+- fighter template creation from a style pack
+- module add and remove
+- transform edits through typed commands
+- connector attach and detach
+- region parameter edits through typed commands
+- material zone edits through typed commands
+- rig template selection
+- socket metadata authoring
+- Rust-owned validation and export preview
+
+These flows live in the desktop app shell, but the underlying state transitions, validation, and export semantics remain Rust-owned.
+
+## 6. Repository structure
 
 ```text
 polybash/
-├─ AGENTS.md
-├─ MASTER_SPEC.md
-├─ docs/
-├─ codex/
-├─ examples/
-├─ contracts/
-│  └─ generated/
-├─ crates/
-│  ├─ polybash-contracts/
-│  ├─ polybash-domain/
-│  ├─ polybash-ops/
-│  ├─ polybash-validate/
-│  ├─ polybash-export/
-│  ├─ polybash-llm/
-│  ├─ polybash-cli/
-│  └─ polybash-wasm/
-├─ plugin/
-│  ├─ src/
-│  │  ├─ adapters/
-│  │  ├─ controllers/
-│  │  ├─ state/
-│  │  ├─ ui/
-│  │  ├─ bridge/
-│  │  └─ tests/
-│  ├─ scripts/
-│  └─ dist/
-├─ fixtures/
-│  ├─ projects/
-│  ├─ stylepacks/
-│  ├─ reports/
-│  └─ exports/
-├─ .github/workflows/
-└─ tools/
+|- AGENTS.md
+|- MASTER_SPEC.md
+|- docs/
+|- codex/
+|- examples/
+|- contracts/
+|  `- generated/
+|- crates/
+|  |- polybash-contracts/
+|  |- polybash-domain/
+|  |- polybash-ops/
+|  |- polybash-validate/
+|  |- polybash-export/
+|  |- polybash-llm/
+|  |- polybash-cli/
+|  `- polybash-wasm/
+|- desktop/
+|  |- src/
+|  |  |- main.ts
+|  |  |- documentPaths.ts
+|  |  |- documentInspector.ts
+|  |  |- sceneProjection.ts
+|  |  |- viewportController.ts
+|  |  |- types.ts
+|  |  `- colocated desktop UI tests
+|  `- src-tauri/
+|     |- src/
+|     |  |- main.rs
+|     |  `- lib.rs
+|     `- capabilities/
+|- plugin/                 # legacy scaffold, not the active product path
+|- fixtures/
+|  |- projects/
+|  |- stylepacks/
+|  |- reports/
+|  `- exports/
+`- .github/workflows/
 ```
 
-## 6. Data model overview
+## 7. Data model overview
 
-## 6.1 Core entities
+## 7.1 Core entities
 
 ### Project
+
 The top-level editable document.
 
 Fields:
@@ -139,13 +171,14 @@ Fields:
 - history metadata
 
 ### StylePack
+
 Defines the rules for a coherent asset family.
 
 Fields:
-- id/version
+- id and version
 - supported asset types
-- triangle/material/texture budgets
-- palettes/material presets
+- triangle, material, and texture budgets
+- palettes and material presets
 - allowed module categories
 - connector taxonomy
 - deformation limits
@@ -153,12 +186,13 @@ Fields:
 - paint rules
 
 ### ModuleDescriptor
+
 Defines a reusable asset module.
 
 Fields:
-- id/version
+- id and version
 - asset type
-- tags/category
+- tags and category
 - connector list
 - region list
 - material zones
@@ -168,6 +202,7 @@ Fields:
 - symmetry metadata
 
 ### ModuleInstance
+
 Placement of a module descriptor inside a project.
 
 Fields:
@@ -180,6 +215,7 @@ Fields:
 - optional mirror metadata
 
 ### RigTemplate
+
 Defines a rig preset.
 
 Fields:
@@ -192,7 +228,8 @@ Fields:
 - export hints
 
 ### ValidationReport
-Structured output for authoring/export checks.
+
+Structured output for authoring and export checks.
 
 Fields:
 - summary stats
@@ -203,7 +240,7 @@ Fields:
 - source versions
 - export status
 
-## 6.2 Canonical formats
+## 7.2 Canonical formats
 
 ### `.zxmodel`
 Editable project document.
@@ -215,14 +252,15 @@ Versioned style pack.
 Versioned module descriptor.
 
 ### `asset.report.json`
-Validation/export report.
+Validation and export report.
 
 ### `.glb`
 Interchange artifact for downstream tools and engine ingestion.
 
-## 7. Proposed Rust workspace
+## 8. Rust workspace
 
-## 7.1 `polybash-contracts`
+### 8.1 `polybash-contracts`
+
 Responsibilities:
 - canonical Rust structs
 - serde support
@@ -230,29 +268,25 @@ Responsibilities:
 - version identifiers
 - shared enums and ids
 
-Recommended crates:
-- `serde`
-- `serde_json`
-- `schemars`
-- `thiserror`
-- `uuid` or typed ids if desired
+### 8.2 `polybash-domain`
 
-## 7.2 `polybash-domain`
 Responsibilities:
 - project normalization
 - command application
 - invariant checks
 - basic state transitions
-- load/save services
+- load and save services
 
-## 7.3 `polybash-ops`
+### 8.3 `polybash-ops`
+
 Responsibilities:
 - connector math
 - transform helpers
 - region deformation math
 - bounding box and metric calculations
 
-## 7.4 `polybash-validate`
+### 8.4 `polybash-validate`
+
 Responsibilities:
 - style pack validation
 - budget validation
@@ -260,74 +294,104 @@ Responsibilities:
 - connector integrity validation
 - export readiness validation
 
-## 7.5 `polybash-export`
+### 8.5 `polybash-export`
+
 Responsibilities:
 - transform normalized project into scene payload
 - build GLB
 - emit report statistics
-- optional extras metadata
+- attach export metadata
 
-## 7.6 `polybash-llm`
+### 8.6 `polybash-llm`
+
 Responsibilities:
 - define structured edit command DSL
 - validate command payloads
 - translate domain-safe command sequences into project mutations
 
-Note: first implementation can omit live model calls and focus on the command contract.
+Note: the first implementation can omit live model calls and focus on the command contract.
 
-## 7.7 `polybash-wasm`
+### 8.7 `polybash-wasm`
+
 Responsibilities:
-- expose selected Rust core functions to TypeScript:
-  - validate project
-  - preview command application
-  - apply command
-  - export project
-  - compute report
-  - load style pack
+- expose selected Rust core functions to TypeScript when a browser-facing or embedded web target is needed
+- maintain parity tests for validate and export behavior
 
-## 7.8 `polybash-cli`
+This is a secondary surface, not the primary desktop integration path.
+
+### 8.8 `polybash-cli`
+
 Responsibilities:
 - headless export and validation
 - fixture runners
 - developer commands
 
-## 8. Proposed TypeScript plugin structure
+## 9. Desktop TypeScript surface
 
-### `adapters/`
-Ports to Blockbench APIs and host-specific seams.
+The current desktop package is intentionally thin and uses flat modules rather than a large framework:
 
-### `controllers/`
-Use-case orchestration, command dispatch, workflow logic.
+- `main.ts`
+  - app shell
+  - Tauri command invocation
+  - document actions
+  - inspector event wiring
+- `documentPaths.ts`
+  - native dialog path normalization
+  - save-path suggestion helpers
+- `documentInspector.ts`
+  - module cards
+  - module library projection
+  - connector options
+  - rig detail projection
+- `sceneProjection.ts`
+  - deterministic low-poly proxy scene projection
+- `viewportController.ts`
+  - Three.js viewport mounting and selection callbacks
+- `types.ts`
+  - desktop-facing TypeScript types
+- colocated `*.spec.ts`
+  - headless desktop UI workflow coverage
 
-### `state/`
-In-memory editor state, derived selectors, undo stack metadata.
+## 10. Boundary contract: desktop UI <-> core
 
-### `ui/`
-Panels, dialogs, module browser, validation panel.
+The desktop UI must not reach into Rust internals conceptually. Cross-boundary communication should be narrow and versioned.
 
-### `bridge/`
-WASM boundary and schema runtime validation.
+Current implemented commands include:
+- `load_canonical_document_command`
+- `create_fighter_template_command`
+- `load_document_command`
+- `save_project_command`
+- `add_module_instance_command`
+- `remove_module_instance_command`
+- `apply_edit_command_command`
+- `set_connector_attachment_command`
+- `clear_connector_attachment_command`
+- `validate_document_command`
+- `export_document_command`
 
-### `tests/`
-Controller-level unit tests and adapter contract tests.
+Conceptually, these map to:
+- load project
+- save project
+- validate project
+- apply edit commands
+- set or clear connector relationships
+- export GLB bundle
 
-## 9. Boundary contract: plugin ↔ core
+The current typed edit-command path covers:
+- transform updates
+- region parameter updates
+- material assignment
+- rig template assignment
+- socket authoring
 
-The plugin must not reach into Rust internals conceptually. Cross-boundary communication should be narrow and versioned.
+## 11. Editing model
 
-Suggested boundary functions:
-- `load_project(json: string) -> Result<ProjectLoadResponse>`
-- `save_project(project: Project) -> Result<String>`
-- `validate_project(project, stylepack) -> ValidationReport`
-- `apply_edit_commands(project, commands) -> ProjectMutationResult`
-- `export_glb(project, stylepack, options) -> ExportBundle`
+## 11.1 Module-driven scene graph
 
-## 10. Editing model
-
-## 10.1 Module-driven scene graph
 Projects are built from module instances attached via connectors or free placement.
 
-## 10.2 Region-driven deformation
+## 11.2 Region-driven deformation
+
 Deformations are defined only on authored regions:
 - torso.chest
 - jaw.width
@@ -337,7 +401,8 @@ Deformations are defined only on authored regions:
 
 This avoids arbitrary mesh editing as a first-class concern.
 
-## 10.3 Material zones
+## 11.3 Material zones
+
 Every module exposes explicit material zones:
 - primary
 - trim
@@ -348,14 +413,15 @@ Every module exposes explicit material zones:
 
 Material assignment happens at zone level before advanced painting.
 
-## 10.4 Paint layers
+## 11.4 Paint layers
+
 Paint sits on top of material zones:
 - fill
 - decal
 - optional brush layer
-- future weathering/grime layer
+- future weathering layer
 
-## 11. LLM command DSL
+## 12. LLM command DSL
 
 LLM assistance must target a safe DSL.
 
@@ -395,14 +461,14 @@ Rules:
 - preview mode computes diff without mutation
 - apply mode returns an undo payload
 
-## 12. Export pipeline
+## 13. Export pipeline
 
 ```mermaid
 flowchart TD
   A[.zxmodel + stylepack] --> B[normalize project]
   B --> C[validate project]
   C --> D[derive scene payload]
-  D --> E[assemble meshes/materials/rig]
+  D --> E[assemble meshes, materials, and rig]
   E --> F[emit GLB]
   C --> G[emit validation report]
   F --> H[write artifact bundle]
@@ -414,7 +480,7 @@ Export bundle:
 - `asset.report.json`
 - optional debug JSON in dev builds
 
-## 13. Validation pipeline
+## 14. Validation pipeline
 
 Validation stages:
 1. schema validity
@@ -438,7 +504,7 @@ Suggested message fields:
 - detail
 - suggested_fix
 
-## 14. Canonical budgets for first style pack
+## 15. Canonical budgets for first style pack
 
 These are recommended defaults, not engine law.
 
@@ -465,21 +531,21 @@ These are recommended defaults, not engine law.
 - materials: 4
 - atlases: 2 x 512x512
 
-## 15. Error handling strategy
+## 16. Error handling strategy
 
 - never silently drop invalid modules
 - never auto-correct across style pack boundaries without a warning
 - fail closed on unknown schema versions
 - make validation human-readable and machine-readable
 
-## 16. Testability strategy by layer
+## 17. Testability strategy by layer
 
 ### Contracts
 - schema round-trip tests
 - version tests
 - rejection tests for invalid fixtures
 
-### Domain/ops
+### Domain and ops
 - property tests
 - invariant tests
 - golden tests for transform math
@@ -489,29 +555,29 @@ These are recommended defaults, not engine law.
 - fixture-based export tests
 - validation-before-export tests
 
-### Plugin
-- controller unit tests
-- adapter seam tests
-- headless command flow tests
+### Desktop UI
+- projection and inspector unit tests
+- desktop bridge seam tests
+- headless document workflow tests
 
-### Host integration
+### Desktop integration
 - minimal smoke checklist
 - do not make the first overnight pass depend on GUI automation
 
-## 17. Security and trust boundaries
+## 18. Security and trust boundaries
 
-- no arbitrary shell execution from plugin
+- no arbitrary shell execution from the desktop shell
 - no network requirement for core logic
 - LLM command application is mediated through DSL validation
 - importers must treat external files as untrusted
 
-## 18. Architecture decisions
+## 19. Architecture decisions
 
 ### ADR-001
-Use Blockbench plugin as the initial editor host instead of building a standalone editor first.
+Use a standalone desktop shell as the initial editor host instead of relying on an external modeling host.
 
 ### ADR-002
-Use Rust as the source of truth for contracts, validation, and export.
+Use Rust as the source of truth for contracts, validation, domain rules, and export.
 
 ### ADR-003
 Keep `.zxmodel` as the authoring format and `.glb` as export output.
@@ -520,4 +586,4 @@ Keep `.zxmodel` as the authoring format and `.glb` as export output.
 Define LLM integration as structured command generation, not direct mesh synthesis.
 
 ### ADR-005
-Target a headless-testable walking skeleton before host polish.
+Target a headless-testable walking skeleton before desktop-shell polish.

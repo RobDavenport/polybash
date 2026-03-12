@@ -7,7 +7,7 @@ milestones:
       - monorepo scaffold exists
       - contracts and schemas compile and validate
       - CLI validate/export works on canonical fighter fixture
-      - plugin shell builds
+      - desktop shell builds
       - project round-trip passes
       - GLB export and report generation work
       - CI is green
@@ -150,36 +150,36 @@ tasks:
       - parity tests between WASM/native exist
 
   - id: T-09
-    title: Build plugin shell and state model
+    title: Build desktop shell and state model
     milestone: M1
     priority: P0
-    lane: plugin
+    lane: desktop
     depends_on: [T-00, T-01]
     outputs:
-      - plugin entry point
+      - desktop entry point
       - controller layer
-      - adapter seams
+      - desktop bridge seams
     done_when:
-      - plugin builds
+      - desktop shell builds
       - controller tests green
 
   - id: T-10
     title: Implement project workflow
     milestone: M1
     priority: P0
-    lane: plugin
+    lane: desktop
     depends_on: [T-08, T-09]
     outputs:
       - new/open/save flow
       - style pack load flow
     done_when:
-      - project round-trip green in plugin tests
+      - project round-trip green in desktop tests
 
   - id: T-11
     title: Implement assembly workflow
     milestone: M1
     priority: P0
-    lane: plugin
+    lane: desktop
     depends_on: [T-08, T-09]
     outputs:
       - browse/place/snap/mirror modules
@@ -190,7 +190,7 @@ tasks:
     title: Implement deformation workflow
     milestone: M1
     priority: P0
-    lane: plugin
+    lane: desktop
     depends_on: [T-08, T-11]
     outputs:
       - region control flow
@@ -202,7 +202,7 @@ tasks:
     title: Implement material workflow
     milestone: M1
     priority: P0
-    lane: plugin
+    lane: desktop
     depends_on: [T-08, T-11]
     outputs:
       - material zone assignment
@@ -214,7 +214,7 @@ tasks:
     title: Implement rig metadata workflow
     milestone: M1
     priority: P0
-    lane: plugin
+    lane: desktop
     depends_on: [T-08, T-10]
     outputs:
       - rig template select
@@ -253,7 +253,7 @@ tasks:
     title: Extend paint workflow
     milestone: M2
     priority: P1
-    lane: plugin
+    lane: desktop
     depends_on: [T-13]
     outputs:
       - decals
@@ -265,7 +265,7 @@ tasks:
     title: Extend rigging fidelity
     milestone: M2
     priority: P1
-    lane: core-plugin
+    lane: core-desktop
     depends_on: [T-14, T-06]
     outputs:
       - richer rig export

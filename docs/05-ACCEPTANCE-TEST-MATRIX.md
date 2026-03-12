@@ -8,24 +8,25 @@ This matrix maps P0 requirements to concrete acceptance scenarios. It is intende
 
 | ID | Requirement(s) | Scenario | Automation level | Pass condition |
 |---|---|---|---|---|
-| AC-01 | FR-01, FR-02 | Create a new fighter project from template and save `.zxmodel` | automated | saved project validates against schema and reloads without drift |
-| AC-02 | FR-03 | Load style pack and enforce supported asset types | automated | incompatible asset/style combinations are rejected with typed error |
-| AC-03 | FR-04, FR-05 | Browse module library and place torso/head/arm/leg modules into project state | automated | module instances exist with stable ids and transforms |
-| AC-04 | FR-06 | Attach compatible modules via connectors | automated | snap succeeds and connector relationship is persisted |
-| AC-05 | FR-06 | Attempt incompatible connector attach | automated | validation fails with connector error code |
-| AC-06 | FR-07 | Mirror a left-arm module to create a right-arm pair | automated | mirrored module created with expected metadata |
-| AC-07 | FR-08 | Apply chest bulge and jaw width changes to authored regions | automated | values persist, clamp correctly, and affect normalized scene payload |
-| AC-08 | FR-09 | Assign material zones using a palette from the style pack | automated | zone assignments persist and validate |
-| AC-09 | FR-10 | Apply a fill layer and one decal layer | automated | paint layer model persists and report reflects usage |
-| AC-10 | FR-11, FR-12 | Assign fighter rig template and add `weapon_r` socket | automated | metadata exists and validation passes |
-| AC-11 | FR-13, FR-14, FR-15 | Export example fighter to GLB and emit report | automated | both files generated; report has no fatal errors |
-| AC-12 | FR-14 | Exceed triangle or texture budget in a negative fixture | automated | validator blocks export with budget error |
-| AC-13 | FR-16 | Preview and apply a structured edit command sequence | automated | preview yields diff; apply mutates project; undo payload exists |
-| AC-14 | FR-17 | Submit invalid command DSL payload | automated | rejected with typed command validation errors |
-| AC-15 | NFR-01 | Re-run export on same fixture | automated | outputs are byte-stable or metadata-stable as defined |
-| AC-16 | NFR-02 | Run validation and export from CLI in headless CI | automated | commands succeed in clean container |
-| AC-17 | NFR-06 | Surface validator errors in plugin state model | automated | controller state includes actionable error data |
-| AC-18 | Host smoke | Load built plugin and execute one example export via host | manual smoke | plugin loads and a user can reach export path once |
+| AC-01 | FR-01, FR-02 | Create a new fighter project from the desktop template flow and save `.zxmodel` | automated | saved project validates against schema and reloads without drift |
+| AC-02 | FR-01, FR-03 | Open an existing project and style pack through the desktop document flow | automated | project and style pack load into desktop state without typed errors |
+| AC-03 | FR-04, FR-05 | Browse the module library and add or remove torso, head, arm, and leg modules | automated | module instances exist with stable ids, and removal prunes dependent connector and decal state |
+| AC-04 | FR-06 | Attach compatible modules via connectors in the desktop inspector | automated | attachment succeeds and connector relationship is persisted |
+| AC-05 | FR-06 | Clear an existing connector attachment in the desktop inspector | automated | attachment is removed and other attachments remain intact |
+| AC-06 | FR-06 | Attempt incompatible connector attach | automated | validation or bridge command fails with a typed connector error |
+| AC-07 | FR-07 | Mirror a left-arm module to create a right-arm pair | automated | mirrored module is created with expected metadata |
+| AC-08 | FR-08 | Apply chest bulge and jaw width changes to authored regions | automated | values persist, clamp correctly, and affect normalized scene payload |
+| AC-09 | FR-09 | Assign material zones using a palette from the style pack | automated | zone assignments persist and validate |
+| AC-10 | FR-10 | Apply a fill layer and one decal layer | automated | paint layer model persists and report reflects usage |
+| AC-11 | FR-11, FR-12 | Assign a fighter rig template and add `weapon_r` socket metadata | automated | metadata exists and validation passes |
+| AC-12 | FR-13, FR-14, FR-15 | Export the example fighter to GLB and emit a report | automated | both artifacts are generated and the report has no fatal errors |
+| AC-13 | FR-14 | Exceed triangle or texture budget in a negative fixture | automated | validator blocks export with a budget error |
+| AC-14 | FR-16 | Preview and apply a structured edit command sequence | automated | preview yields a diff, apply mutates project state, and an undo payload exists |
+| AC-15 | FR-17 | Submit an invalid command DSL payload | automated | payload is rejected with typed command validation errors |
+| AC-16 | NFR-01 | Re-run export on the same fixture | automated | outputs are byte-stable or metadata-stable as defined |
+| AC-17 | NFR-02 | Run validation and export from the CLI in headless CI | automated | commands succeed in a clean container |
+| AC-18 | NFR-06 | Surface validator errors in desktop state or inspector projections | automated | desktop UI state includes actionable error data |
+| AC-19 | Desktop smoke | Launch the built desktop app, use native document flow, validate once, and export once | manual smoke | desktop shell launches and a user can reach the validation and export path once |
 
 ## 3. Minimal test file map
 
@@ -41,15 +42,13 @@ The exact names may vary, but the repo should end up with equivalents to:
 - `crates/polybash-export/tests/export_fighter.rs`
 - `crates/polybash-cli/tests/cli_validate.rs`
 - `crates/polybash-cli/tests/cli_export.rs`
+- `desktop/src-tauri/src/lib.rs` test module for desktop bridge and workflow coverage
 
 ### TypeScript
-- `plugin/src/tests/project-controller.spec.ts`
-- `plugin/src/tests/module-browser-controller.spec.ts`
-- `plugin/src/tests/assembly-controller.spec.ts`
-- `plugin/src/tests/deformation-controller.spec.ts`
-- `plugin/src/tests/material-controller.spec.ts`
-- `plugin/src/tests/validation-panel-state.spec.ts`
-- `plugin/src/tests/bridge.spec.ts`
+- `desktop/src/documentPaths.spec.ts`
+- `desktop/src/documentInspector.spec.ts`
+- `desktop/src/sceneProjection.spec.ts`
+- equivalent desktop workflow specs for document actions, connector UI, and validation display as those slices harden
 
 ## 4. Canonical acceptance fixture set
 
@@ -64,7 +63,7 @@ The exact names may vary, but the repo should end up with equivalents to:
 - `fixtures/stylepacks/invalid/missing_palette.stylepack.json`
 - `fixtures/commands/invalid/unknown_op.json`
 
-## 5. Pass/fail rules
+## 5. Pass and fail rules
 
 ### Pass
 - scenario behaves exactly as required
@@ -75,15 +74,15 @@ The exact names may vary, but the repo should end up with equivalents to:
 ### Fail
 - silent fallback occurs
 - export succeeds despite fatal validation issues
-- command apply mutates state without preview/undo support
-- host-specific assumptions leak into headless tests
-- acceptance scenario is only “manually verified” when it should be automated
+- command apply mutates state without preview or undo support
+- desktop-only assumptions leak into headless tests
+- acceptance scenario is only "manually verified" when it should be automated
 
 ## 6. Manual smoke checklist (thin)
 
-1. install or load plugin into Blockbench
-2. open canonical fighter example
-3. confirm module browser appears
+1. launch the desktop application
+2. open the canonical fighter example or create a new fighter from the desktop shell
+3. confirm the module library, inspector, and viewport appear
 4. run validation
 5. run export once
 6. verify `asset.glb` and `asset.report.json` exist

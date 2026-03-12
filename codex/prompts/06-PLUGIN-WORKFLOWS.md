@@ -1,4 +1,4 @@
-# Prompt 06 — Plugin Workflows
+# Prompt 06 - Desktop Workflows
 
 Target tasks:
 - `T-11`
@@ -13,11 +13,13 @@ Focus:
 - material zone assignment
 - basic paint layer model
 - rig template and sockets metadata
+- desktop viewport/editor interactions that exercise those workflows
 
 Rules:
 - preserve structured state
 - use style pack rules for validation and clamping
 - keep workflows thin but real
+- keep Rust authoritative for deterministic document mutation
 
 Required deliverables:
 - workflow tests

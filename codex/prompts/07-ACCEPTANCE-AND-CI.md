@@ -1,4 +1,4 @@
-# Prompt 07 — Acceptance and CI
+# Prompt 07 - Acceptance and CI
 
 Target tasks:
 - `T-15`
@@ -9,6 +9,7 @@ Focus:
 - smoke checklist
 - release gate summary
 - CI commands matching real build/test flows
+- standalone desktop verification as the primary UI lane
 
 Rules:
 - every P0 requirement must map to evidence

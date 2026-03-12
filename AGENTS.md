@@ -51,9 +51,9 @@ If there is a conflict:
    - Avoid time-dependent or nondeterministic behavior in exported artifacts unless intentionally injected behind a seam.
 
 6. **Preserve architectural boundaries.**
-   - TypeScript plugin code handles UI, host integration, and orchestration.
+   - TypeScript desktop shell code handles UI, native integration adapters, and orchestration.
    - Rust core handles contracts, domain rules, validation, export logic, and deterministic transforms.
-   - Shared contracts must be versioned and test-covered.
+   - Shared contracts and desktop bridge payloads must be versioned and test-covered.
 
 7. **No hidden AI magic.**
    - LLM assistance must emit structured edit commands or structured suggestions.
@@ -67,7 +67,7 @@ The “overnight” target is **not** the whole long-term product. It is the fir
 
 - monorepo scaffold
 - Rust workspace with contracts, validation, export core, and CLI
-- Blockbench plugin shell in TypeScript
+- standalone desktop shell in TypeScript with a Tauri bridge
 - `.zxmodel` authoring format
 - style pack loading
 - module placement and snap/connect logic
@@ -98,8 +98,9 @@ If a choice is unspecified, use these defaults:
 - authoring source format: `.zxmodel` JSON
 - export format: `.glb`
 - texture format: PNG
-- plugin language: TypeScript
-- plugin build: `pnpm` + `esbuild`
+- desktop UI language: TypeScript
+- desktop shell build: `pnpm` + `vite`
+- desktop bridge: Tauri
 - core language: Rust stable
 - schema generation: Rust source of truth with generated JSON Schema
 - TS runtime contract validation: AJV against generated schemas

@@ -1,4 +1,4 @@
-# Prompt 00 — Launch This Repo
+# Prompt 00 - Launch This Repo
 
 You are working inside the **PolyBash** monorepo scaffold.
 
@@ -8,6 +8,7 @@ Read, in order:
 3. `docs/04-TDD-QUALITY-GATES.md`
 4. `docs/05-ACCEPTANCE-TEST-MATRIX.md`
 5. `codex/taskboard.yaml`
+6. `codex/STANDALONE_PIVOT.md`
 
 ## Mission
 
@@ -16,16 +17,18 @@ Deliver **M1: walking skeleton** from this scaffold.
 Do not attempt the whole product.
 Do not jump to M2 or V1.
 Do not invent alternate architecture.
+Treat the standalone desktop app as the active product direction.
 
 ## Hard rules
 
-- follow **Red → Green → Refactor**
+- follow **Red -> Green -> Refactor**
 - start every work item with failing tests or failing fixtures
 - keep trunk green
 - keep validators authoritative
 - prefer the smallest complete vertical slice
 - document real gaps instead of pretending they are solved
 - preserve the Rust / TypeScript boundary defined by the docs
+- prefer `desktop/` over `plugin/` for all new UI/app-shell work unless a migration task explicitly targets legacy scaffolding
 
 ## Required first move
 
@@ -36,7 +39,7 @@ Do not invent alternate architecture.
    - contracts
    - core
    - bridge
-   - plugin
+   - desktop
    - qa
 5. begin with the smallest task that increases end-to-end completeness without creating architecture drift
 

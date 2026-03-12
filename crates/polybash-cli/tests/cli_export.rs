@@ -34,7 +34,8 @@ fn export_command_writes_glb_and_report_for_valid_fixture() {
     assert_eq!(output.status.code(), Some(0));
 
     let glb_bytes = fs::read(out_dir.path().join("asset.glb")).expect("glb written");
-    let report = fs::read_to_string(out_dir.path().join("asset.report.json")).expect("report written");
+    let report =
+        fs::read_to_string(out_dir.path().join("asset.report.json")).expect("report written");
 
     assert!(glb_bytes.starts_with(b"glTF"));
     assert!(report.contains("\"status\": \"ok\""));
@@ -43,7 +44,8 @@ fn export_command_writes_glb_and_report_for_valid_fixture() {
 #[test]
 fn export_command_blocks_invalid_fixture_and_still_writes_report() {
     let out_dir = tempdir().expect("temp dir");
-    let invalid_project = fixture_path("fixtures/projects/invalid/fighter_over_budget.zxmodel.json");
+    let invalid_project =
+        fixture_path("fixtures/projects/invalid/fighter_over_budget.zxmodel.json");
     let stylepack = fixture_path("fixtures/stylepacks/valid/zx_fighter_v1.stylepack.json");
 
     let output = Command::new(env!("CARGO_BIN_EXE_polybash-cli"))
@@ -62,7 +64,8 @@ fn export_command_blocks_invalid_fixture_and_still_writes_report() {
     assert_eq!(output.status.code(), Some(2));
     assert!(!out_dir.path().join("asset.glb").exists());
 
-    let report = fs::read_to_string(out_dir.path().join("asset.report.json")).expect("report written");
+    let report =
+        fs::read_to_string(out_dir.path().join("asset.report.json")).expect("report written");
     assert!(report.contains("\"status\": \"error\""));
     assert!(report.contains("\"code\": \"BUDGET_TRIANGLES\""));
 }

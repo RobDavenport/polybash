@@ -13,10 +13,11 @@ It is intended to support:
 - vehicles
 - modular environment chunks
 
-The tool is built around:
+The product ships as a **standalone desktop application** with:
 - module-driven kitbashing
 - constrained shaping instead of full freeform modeling
-- palette/material assignment and lightweight painting
+- palette and material assignment
+- lightweight paint-layer support
 - rig templates and rig metadata
 - strict export validation
 - clean GLB export
@@ -40,7 +41,7 @@ Create a constrained 3D asset builder that:
 - feels approachable to non-expert modelers
 - still produces usable, game-ready meshes
 - preserves style consistency through style packs
-- avoids “mini-Blender” scope creep
+- avoids "mini-Blender" scope creep
 - can hand off to Blender for advanced animation when needed
 
 ## 4. Target users
@@ -52,11 +53,11 @@ Solo and small-team indie game developers making retro 3D games.
 Technical artists or designers who want to author variations quickly without deep modeling knowledge.
 
 ### Tertiary
-Writers/designers using LLM assistance to propose characters or props that can then be turned into structured editable assets.
+Writers and designers using LLM assistance to propose characters or props that can then be turned into structured editable assets.
 
 ## 5. Primary use cases
 
-1. Create a fighter character from a template, swap parts, adjust silhouette, assign palette/material zones, export to GLB, and continue animation in Blender.
+1. Create a fighter character from a template in the desktop app, swap parts, adjust silhouette, assign palette and material zones, export to GLB, and continue animation in Blender.
 2. Create a weapon or prop by assembling modules and adjusting a few guided deformation controls.
 3. Create modular environment chunks using connectors and a style pack with enforced texture and mesh budgets.
 4. Use natural language to request structured edits, preview them, and apply them safely.
@@ -72,7 +73,7 @@ Writers/designers using LLM assistance to propose characters or props that can t
 - Make validation a first-class feature rather than an afterthought.
 
 ### Engineering goals
-- Maintain a strict separation between UI/host logic and deterministic core logic.
+- Maintain a strict separation between desktop UI logic and deterministic core logic.
 - Drive development with TDD.
 - Make contracts explicit and versioned.
 - Make all critical paths testable in headless CI.
@@ -84,51 +85,52 @@ PolyBash v1 is **not**:
 - a sculpting tool
 - a node material editor
 - a full animation package
-- a cloth/hair simulation tool
+- a cloth or hair simulation tool
 - a procedural modeling graph tool
 - a marketplace platform
 - an unconstrained text-to-mesh generator
 
 ## 8. UX principles
 
-1. **Guided over open-ended**  
+1. **Guided over open-ended**
    Prefer templates, constrained edits, and high-signal controls.
 
-2. **Game-ready by default**  
+2. **Game-ready by default**
    Export, budgets, and validation are always visible.
 
-3. **Beginner-friendly, not toy-like**  
+3. **Beginner-friendly, not toy-like**
    The system should feel approachable without preventing professional output.
 
-4. **Visual edits should map to clear data**  
+4. **Visual edits should map to clear data**
    Every user action should correspond to structured project data.
 
-5. **Safe LLM assistance**  
+5. **Safe LLM assistance**
    Natural-language input should produce reversible structured edits.
 
 ## 9. Product scope
 
 ## 9.1 Overnight target (P0 walking skeleton)
 
-The overnight target is the smallest end-to-end product slice that proves the architecture:
+The overnight target is the smallest end-to-end product slice that proves the standalone architecture:
 
-- create/open/save `.zxmodel`
+- create, open, and save `.zxmodel`
+- support native desktop document dialogs
 - load a style pack
 - load module descriptors
 - browse modules by category
-- place modules in a scene
-- connect modules using snap/connect rules
+- add and remove modules in a scene
+- attach and detach connectors using snap and compatibility rules
 - apply constrained deformations to authored regions
-- assign material zones from a palette/material preset
+- assign material zones from a palette or material preset
 - assign a rig template and socket metadata
-- export `.glb`
-- run validation and emit a report
+- export `.glb` through the Rust-owned export path
+- run validation and emit a report through the Rust-owned validation path
 - provide example fixtures and tests
 
 ## 9.2 V1 scope
 
 ### Asset authoring
-- templates for fighter, prop, weapon, vehicle, room chunk
+- templates for fighter, prop, weapon, vehicle, and room chunk
 - part library with category filters and tags
 - symmetry and mirroring support
 - connector-driven placement
@@ -138,13 +140,13 @@ The overnight target is the smallest end-to-end product slice that proves the ar
 ### Surface workflow
 - material slot assignment
 - palette presets
-- texture atlas generation/management
+- texture atlas generation and management
 - decals and basic paint layers
-- texture import/export
+- texture import and export
 
-### Rigging/export
+### Rigging and export
 - biped, mech, and vehicle rig templates
-- rigid / hybrid / smooth rig modes
+- rigid, hybrid, and smooth rig modes
 - sockets and engine metadata
 - GLB export
 - validation report
@@ -156,17 +158,18 @@ The overnight target is the smallest end-to-end product slice that proves the ar
 - validator-aware feedback
 
 ## 9.3 Deferred after v1
+
 - advanced paint brushes
 - smooth skin paint UI
 - animation timeline and editor
 - custom shader authoring
-- online sharing/distribution
+- online sharing and distribution
 - collaborative editing
 
 ## 10. Functional requirements
 
 ### FR-01 Project lifecycle
-The system must create, open, save, and version `.zxmodel` files.
+The system must create, open, save, and version `.zxmodel` files through the standalone desktop document workflow and the headless CLI.
 
 ### FR-02 Template initialization
 The system must initialize a new project from a supported template:
@@ -179,7 +182,7 @@ The system must initialize a new project from a supported template:
 ### FR-03 Style packs
 The system must load a style pack that defines:
 - budgets
-- palette/material presets
+- palette and material presets
 - connector taxonomy
 - rig templates
 - paint rules
@@ -190,15 +193,15 @@ The system must display modules by:
 - category
 - asset type
 - tags
-- compatibility with current style pack
+- compatibility with the current style pack
 
 ### FR-05 Placement
-The system must place module instances in the scene with transform metadata.
+The system must place module instances in the scene with transform metadata and stable instance ids.
 
-### FR-06 Snap/connect
-The system must support connector-based snapping with validation of compatible connector types.
+### FR-06 Snap and connect
+The system must support connector-based attachment and detachment with validation of compatible connector types.
 
-### FR-07 Symmetry/mirroring
+### FR-07 Symmetry and mirroring
 The system must support mirrored placement or mirrored module generation where applicable.
 
 ### FR-08 Guided deformation
@@ -210,22 +213,22 @@ The system must support constrained deformations on authored regions, including 
 - twist
 
 ### FR-09 Material zones
-The system must allow per-zone material/palette assignments.
+The system must allow per-zone material and palette assignments.
 
 ### FR-10 Paint layers
 The system must support a minimal paint layer model:
 - fill
 - decal
-- optional brush stroke placeholder in first slice
+- optional brush stroke placeholder in the first slice
 
 ### FR-11 Rig templates
 The system must apply rig templates and store rig metadata on the asset.
 
 ### FR-12 Socket metadata
-The system must support named sockets/hardpoints bound to bones or transforms.
+The system must support named sockets or hardpoints bound to bones or transforms.
 
 ### FR-13 Export
-The system must export a GLB file suitable for downstream tools and engine ingestion.
+The system must export a GLB file suitable for downstream tools and engine ingestion from both the desktop shell and the CLI.
 
 ### FR-14 Validation
 The system must validate:
@@ -251,13 +254,13 @@ The system must define a structured command DSL for natural-language-assisted ed
 The same input project and style pack must produce the same export and report.
 
 ### NFR-02 Headless testability
-Critical logic must be runnable in CI without a GUI host.
+Critical logic must be runnable in CI without the desktop GUI host.
 
 ### NFR-03 Performance
 Common operations on a typical fighter asset should feel interactive on a normal development machine.
 
 ### NFR-04 Safety
-Validation and import/export paths must fail explicitly on invalid inputs.
+Validation and import or export paths must fail explicitly on invalid inputs.
 
 ### NFR-05 Compatibility
 The system must keep authoring and export contracts versioned and backwards-conscious.
@@ -274,19 +277,20 @@ Critical core logic must meet the coverage and test gate requirements defined in
 - A new user can produce a basic fighter asset in under 20 minutes using a template and modules.
 - The export path works on all canonical fixtures.
 - Validation catches out-of-budget fixtures before export acceptance.
-- The authoring format stays editable after repeated load/save cycles.
+- The authoring format stays editable after repeated load and save cycles.
 
 ### Engineering metrics
 - All P0 acceptance criteria are automated except explicitly documented manual smoke checks.
-- Core contract/validation/export crates meet coverage targets.
-- The plugin bundle builds reproducibly from a clean environment.
+- Core contract, validation, and export crates meet coverage targets.
+- The standalone desktop shell and core workspace build reproducibly from a clean environment.
 
 ## 13. Constraints and assumptions
 
-- The project will avoid building a full standalone DCC in the first implementation.
-- Blockbench is the initial editor host for v1.
+- The first implementation is a focused standalone desktop authoring tool, not a full general-purpose DCC.
+- The desktop shell owns the editor chrome, document workflow, and viewport integration for v1.
 - Rust is the deterministic core.
-- TypeScript is the plugin layer.
+- TypeScript powers the desktop UI shell.
+- Tauri is the desktop bridge layer.
 - Blender remains the downstream animation tool.
 - GLB is the export target.
 - `.zxmodel` is the authoring source of truth.
@@ -295,7 +299,7 @@ Critical core logic must meet the coverage and test gate requirements defined in
 
 The following are treated as resolved defaults for v1 so implementation can begin without drift:
 
-- animation authoring is downstream, not in-scope for overnight
+- animation authoring is downstream, not in scope for overnight
 - style packs own budgets and palettes
 - LLM assistance uses structured commands only
 - direct freeform mesh editing is not the main workflow

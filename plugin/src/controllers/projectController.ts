@@ -13,6 +13,42 @@ export class ProjectController {
     setProject(this.store, project);
   }
 
+  createProjectFromTemplate(template: "fighter", projectId: string): ProjectData {
+    const state = this.store.getState();
+    const stylePack = state.stylePack;
+    if (!stylePack) {
+      throw new Error("No style pack loaded.");
+    }
+
+    const project: ProjectData = {
+      version: 1,
+      id: projectId,
+      assetType: template === "fighter" ? "character" : "character",
+      stylePackId: stylePack.id,
+      skeletonTemplate: stylePack.rigTemplates[0]?.id ?? null,
+      modules: [],
+      paintLayers: [],
+      rig: stylePack.rigTemplates[0]
+        ? {
+            templateId: stylePack.rigTemplates[0].id,
+            sockets: []
+          }
+        : null,
+      declaredMetrics: {
+        triangles: 0,
+        materials: 0,
+        textures: 0,
+        atlasWidth: 0,
+        atlasHeight: 0,
+        bones: 0,
+        sockets: 0
+      }
+    };
+
+    setProject(this.store, project);
+    return project;
+  }
+
   async openProject(path: string): Promise<ProjectData> {
     const data = JSON.parse(await this.host.readText(path)) as ProjectData;
     setProject(this.store, data);

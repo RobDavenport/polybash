@@ -1,5 +1,6 @@
 [workspace]
 members = [
+  "desktop/src-tauri",
   "crates/polybash-contracts",
   "crates/polybash-domain",
   "crates/polybash-ops",

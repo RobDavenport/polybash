@@ -1,0 +1,1 @@
+{"main-dialog":{"identifier":"main-dialog","description":"Allow the main PolyBash window to use native open/save dialogs.","local":true,"windows":["main"],"permissions":["core:default","dialog:allow-open","dialog:allow-save"]}}

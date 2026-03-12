@@ -34,7 +34,8 @@ fn validate_command_prints_clean_report_for_canonical_fighter() {
 
 #[test]
 fn validate_command_returns_nonzero_for_invalid_fixture() {
-    let invalid_project = fixture_path("fixtures/projects/invalid/fighter_over_budget.zxmodel.json");
+    let invalid_project =
+        fixture_path("fixtures/projects/invalid/fighter_over_budget.zxmodel.json");
     let stylepack = fixture_path("fixtures/stylepacks/valid/zx_fighter_v1.stylepack.json");
 
     let output = Command::new(env!("CARGO_BIN_EXE_polybash-cli"))

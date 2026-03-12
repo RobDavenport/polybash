@@ -1,0 +1,22 @@
+{
+  "$schema": "https://schema.tauri.app/config/2",
+  "productName": "PolyBash Desktop",
+  "version": "0.1.0",
+  "identifier": "com.nethercore.polybash",
+  "build": {
+    "beforeDevCommand": "pnpm dev",
+    "beforeBuildCommand": "pnpm build",
+    "frontendDist": "../dist"
+  },
+  "app": {
+    "windows": [
+      {
+        "label": "main",
+        "title": "PolyBash Desktop",
+        "width": 1440,
+        "height": 960,
+        "resizable": true
+      }
+    ]
+  }
+}

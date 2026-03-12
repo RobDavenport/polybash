@@ -9,31 +9,37 @@ This WBS is designed for two horizons:
 
 ## 2. Milestones
 
-### M0 — Planning complete
+### M0 - Planning complete
+
 Done when:
 - PRD exists
 - architecture exists
 - acceptance matrix exists
 - prompt pack exists
 
-### M1 — Walking skeleton complete (overnight target)
+### M1 - Walking skeleton complete (overnight target)
+
 Done when:
 - repo scaffold exists
 - contracts compile
-- plugin shell builds
+- desktop shell builds
+- native document flow works
 - example projects validate
-- GLB export works on canonical fighter fixture
+- GLB export works on the canonical fighter fixture
 - report generation works
 - CI is green
 
-### M2 — Authoring MVP
+### M2 - Authoring MVP
+
 Done when:
-- assembly workflow works across fighter/weapon/prop
+- assembly workflow works across fighter, weapon, and prop
 - style packs and module browsing are usable
 - material zones and basic paint layers work
 - rig templates and sockets are present
+- connector attach and detach workflows are usable from the desktop shell
 
-### M3 — V1 complete
+### M3 - V1 complete
+
 Done when:
 - characters, props, vehicles, and chunks are all supported
 - hybrid rigging exists
@@ -51,25 +57,26 @@ Done when:
 | WP-04 | Geometry ops | connector math, transforms, region params | WP-03 | core | P0 |
 | WP-05 | Validator | typed validation pipeline and report | WP-03, WP-04 | core | P0 |
 | WP-06 | Exporter | GLB export bundle | WP-03, WP-05 | core | P0 |
-| WP-07 | CLI | validate/export commands | WP-05, WP-06 | core | P0 |
-| WP-08 | WASM bridge | TS-facing core API | WP-05, WP-06 | bridge | P0 |
-| WP-09 | Plugin shell | buildable plugin, state model, adapter seams | WP-00, WP-01 | plugin | P0 |
-| WP-10 | Project workflow | create/open/save, style pack loading | WP-08, WP-09 | plugin | P0 |
-| WP-11 | Assembly workflow | browse/place/snap modules | WP-08, WP-09 | plugin | P0 |
-| WP-12 | Deformation workflow | region parameter editing | WP-08, WP-11 | plugin | P0 |
-| WP-13 | Material workflow | zone assignment and basic layer model | WP-08, WP-11 | plugin | P0 |
-| WP-14 | Rig metadata workflow | rig template + sockets | WP-08, WP-10 | plugin | P0 |
-| WP-15 | CI and quality gates | build/test/lint/coverage pipeline | WP-00 | qa | P0 |
+| WP-07 | CLI | validate and export commands | WP-05, WP-06 | core | P0 |
+| WP-08 | Desktop bridge | Tauri command surface and typed desktop payloads | WP-03, WP-05, WP-06 | bridge | P0 |
+| WP-09 | Desktop shell | buildable desktop app, state model, adapter seams | WP-00, WP-01, WP-08 | desktop | P0 |
+| WP-10 | Project workflow | create, open, save, style pack loading, native dialogs | WP-09 | desktop | P0 |
+| WP-11 | Assembly workflow | browse, add, remove, attach, and detach modules | WP-08, WP-09 | desktop | P0 |
+| WP-12 | Deformation workflow | region parameter editing | WP-08, WP-11 | desktop | P0 |
+| WP-13 | Material workflow | zone assignment and basic layer model | WP-08, WP-11 | desktop | P0 |
+| WP-14 | Rig metadata workflow | rig template and sockets | WP-08, WP-10 | desktop | P0 |
+| WP-15 | CI and quality gates | build, test, lint, and coverage pipeline | WP-00 | qa | P0 |
 | WP-16 | Acceptance harness | fixture-driven acceptance suite | WP-05, WP-06, WP-10..WP-14 | qa | P0 |
 | WP-17 | Release docs | README, usage notes, examples | WP-15, WP-16 | trunk | P0 |
-| WP-18 | Decal/paint extensions | basic paint UI and atlas ops | WP-13 | plugin | P1 |
-| WP-19 | Hybrid rigging | weighting modes and richer export | WP-14, WP-06 | core/plugin | P1 |
-| WP-20 | LLM command integration | prompt → DSL → preview/apply | WP-03, WP-08 | core/plugin | P1 |
-| WP-21 | Additional asset templates | vehicle/chunk polish | M1 | product | P1 |
+| WP-18 | Viewport and gizmo hardening | direct manipulation, transform gizmos, mirror polish | WP-11, WP-12 | desktop | P1 |
+| WP-19 | Hybrid rigging | weighting modes and richer export | WP-14, WP-06 | core/desktop | P1 |
+| WP-20 | LLM command integration | prompt -> DSL -> preview/apply | WP-03, WP-08 | core/desktop | P1 |
+| WP-21 | Secondary delivery surfaces | optional WASM or web embedding parity | M1 | bridge | P2 |
 
 ## 4. Detailed task decomposition
 
 ## WP-00 Program setup
+
 Tasks:
 - create monorepo layout
 - choose package manager and Rust workspace structure
@@ -80,12 +87,13 @@ Tasks:
 Done criteria:
 - `cargo test --workspace` runs
 - `pnpm test` runs
-- CI starts on push/PR
+- CI starts on push and PR
 - docs folder wired in
 
 ## WP-01 Contracts and schemas
+
 Tasks:
-- define ids/enums/types in Rust
+- define ids, enums, and types in Rust
 - define version block
 - generate JSON Schema
 - define report types
@@ -98,6 +106,7 @@ Done criteria:
 - contract tests are green
 
 ## WP-02 Example fixtures
+
 Tasks:
 - canonical fighter project
 - canonical style pack
@@ -110,8 +119,9 @@ Done criteria:
 - examples validate under schema
 
 ## WP-03 Rust domain core
+
 Tasks:
-- load/save model
+- load and save model
 - normalize project
 - apply edit commands
 - maintain invariants
@@ -123,9 +133,10 @@ Done criteria:
 - command application can preview and apply
 
 ## WP-04 Geometry ops
+
 Tasks:
 - connector compatibility logic
-- transform compose/decompose helpers
+- transform compose and decompose helpers
 - region parameter math
 - metrics helpers
 
@@ -135,6 +146,7 @@ Done criteria:
 - deterministic math paths are documented
 
 ## WP-05 Validator
+
 Tasks:
 - schema validity checks
 - style pack compatibility checks
@@ -149,10 +161,11 @@ Done criteria:
 - reports are stable snapshots
 
 ## WP-06 Exporter
+
 Tasks:
 - derive normalized scene payload
 - build GLB artifact
-- attach metadata/extras as needed
+- attach metadata and extras as needed
 - emit export stats
 
 Done criteria:
@@ -162,6 +175,7 @@ Done criteria:
 - exported artifact is referenced by snapshot or fixture tests
 
 ## WP-07 CLI
+
 Tasks:
 - `validate` command
 - `export` command
@@ -173,55 +187,62 @@ Done criteria:
 - CLI commands are integration-tested
 - errors are non-cryptic
 
-## WP-08 WASM bridge
+## WP-08 Desktop bridge
+
 Tasks:
-- export core functions to TS
-- define JS-friendly payloads
-- add bridge tests
+- expose core functions through Tauri commands
+- define desktop-safe payloads
+- add desktop bridge tests
 - wire error translation
 
 Done criteria:
-- TS can validate and export via bridge in tests
-- result parity exists between WASM and native fixture runs
+- the desktop shell can validate and export through the bridge in tests
+- add, remove, edit, and connector workflows cross the bridge with typed responses
+- bridge behavior reuses the same Rust services exercised by the CLI
 
-## WP-09 Plugin shell
+## WP-09 Desktop shell
+
 Tasks:
-- plugin entry point
+- desktop application entry point
 - state store
-- host adapters
+- desktop adapters and bridge clients
 - panel layout placeholders
 - command dispatch pipeline
 
 Done criteria:
-- plugin builds
-- controller tests pass
-- host adapter seams are mockable
+- desktop shell builds
+- controller or projection tests pass
+- desktop adapter seams are mockable
 
 ## WP-10 Project workflow
+
 Tasks:
 - new project
-- open/save project
+- native open and save project flow
 - style pack load
 - validation panel integration
 
 Done criteria:
 - project workflow tested headlessly
 - serialized output stable
-- validation surfaced in UI state
+- validation surfaced in desktop state and inspectors
 
 ## WP-11 Assembly workflow
+
 Tasks:
 - module browsing
-- placement
-- snap/connect
+- add and remove modules
+- connector attach and detach
 - mirror placement
 
 Done criteria:
-- can assemble fighter example from modules
-- snap/connect rules enforced
-- mirrored module instances handled
+- can assemble the fighter example from modules
+- connector rules are enforced
+- removal prunes dependent connector and decal state
+- mirrored module instances are handled
 
 ## WP-12 Deformation workflow
+
 Tasks:
 - region control UI model
 - update command generation
@@ -229,11 +250,12 @@ Tasks:
 - persistence to project file
 
 Done criteria:
-- representative regions editable
-- values clamped by style pack limits
+- representative regions are editable
+- values clamp by style pack limits
 - regression tests cover persistence
 
 ## WP-13 Material workflow
+
 Tasks:
 - material zone assignment
 - palette application
@@ -241,11 +263,12 @@ Tasks:
 - basic decal hook
 
 Done criteria:
-- zones assignable
-- palette constraints validated
-- report includes texture/material usage
+- zones are assignable
+- palette constraints validate
+- report includes texture and material usage
 
 ## WP-14 Rig metadata workflow
+
 Tasks:
 - rig template selection
 - socket assignment
@@ -253,10 +276,11 @@ Tasks:
 
 Done criteria:
 - fighter example can bind a rig template
-- socket metadata exported
+- socket metadata exports
 - validation catches missing required bones or sockets
 
 ## WP-15 CI and quality gates
+
 Tasks:
 - linting
 - formatting
@@ -270,6 +294,7 @@ Done criteria:
 - examples are checked in CI
 
 ## WP-16 Acceptance harness
+
 Tasks:
 - implement acceptance scenarios
 - link requirements to tests
@@ -281,6 +306,7 @@ Done criteria:
 - acceptance report is easy to review
 
 ## WP-17 Release docs
+
 Tasks:
 - usage notes
 - contribution guide
@@ -294,24 +320,29 @@ Done criteria:
 
 ## 5. Parallelization guidance
 
-### Parallel lane A — contracts
+### Parallel lane A - contracts
+
 Work on WP-01 and WP-02 first.
 
-### Parallel lane B — core
+### Parallel lane B - core
+
 Begin WP-03 and WP-04 once core contracts settle.
 
-### Parallel lane C — plugin shell
-Begin WP-09 early using mocked contracts, but re-sync after WP-01.
+### Parallel lane C - desktop bridge and shell
 
-### Parallel lane D — QA
+Begin WP-08 and WP-09 early using mocked data if necessary, then re-sync after WP-01.
+
+### Parallel lane D - QA
+
 Begin WP-15 immediately, then WP-16 as soon as acceptance scenarios stabilize.
 
 ### Merge order
-1. trunk/bootstrap
+
+1. trunk and bootstrap
 2. contracts
-3. core math/domain
-4. validator/export
-5. plugin shell
+3. core math and domain
+4. validator and export
+5. desktop bridge and shell
 6. workflows and acceptance harness
 7. hardening
 
@@ -325,18 +356,18 @@ Begin WP-15 immediately, then WP-16 as soon as acceptance scenarios stabilize.
 ### Phase O2
 - WP-02
 - WP-03
+- WP-08
 - WP-09
 
 ### Phase O3
 - WP-04
 - WP-05
-- WP-08
 - WP-10
+- WP-11
 
 ### Phase O4
 - WP-06
 - WP-07
-- WP-11
 - WP-12
 - WP-13
 - WP-14
@@ -345,12 +376,27 @@ Begin WP-15 immediately, then WP-16 as soon as acceptance scenarios stabilize.
 - WP-16
 - WP-17
 
-## 7. Descoping order if time or complexity explodes
+## 7. Current implementation notes
+
+The current repository already contains meaningful progress against M1:
+
+- the desktop shell builds
+- native document dialogs exist
+- module add and remove exists
+- typed transform edits exist through the shared command path
+- connector attach and detach exists
+- material and region edits exist through typed Rust-backed commands
+- rig template and socket metadata flows exist
+- validation and export are Rust-owned and reachable from the desktop shell
+
+The largest remaining gaps before a stronger standalone MVP are transform gizmos, richer direct manipulation, mirror workflow coverage, and deeper undo and diff semantics.
+
+## 8. Descoping order if time or complexity explodes
 
 Descoping order should preserve the walking skeleton:
 
 1. drop advanced painting before dropping material zones
 2. drop smooth rigging before dropping rig metadata
-3. drop extra asset categories before dropping fighter workflow
+3. drop extra asset categories before dropping the fighter workflow
 4. drop live LLM integration before dropping the command DSL
-5. drop GUI polish before dropping headless correctness
+5. drop desktop polish before dropping headless correctness

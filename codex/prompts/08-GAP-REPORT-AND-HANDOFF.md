@@ -1,4 +1,4 @@
-# Prompt 08 — Gap Report and Handoff
+# Prompt 08 - Gap Report and Handoff
 
 Focus:
 - review the whole repo honestly
@@ -6,6 +6,7 @@ Focus:
 - identify what is partial
 - identify what is stubbed
 - identify what must happen next for M2
+- keep the standalone desktop app as the main handoff target
 
 Rules:
 - do not exaggerate completeness

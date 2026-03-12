@@ -1,4 +1,4 @@
-# Prompt 05 — Plugin Shell
+# Prompt 05 - Desktop Shell
 
 Target tasks:
 - `T-08`
@@ -7,13 +7,13 @@ Target tasks:
 
 Focus:
 - WASM/core bridge seam
-- plugin shell
+- desktop shell
 - project open/save flow
 - style pack loading flow
 - controller/state architecture
 
 Rules:
-- host APIs stay behind adapters
+- desktop bridge and native integrations stay behind adapters
 - controllers remain testable headlessly
 - project round-trip must be tested
 

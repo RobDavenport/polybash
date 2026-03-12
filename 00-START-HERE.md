@@ -22,8 +22,8 @@ The overnight target is:
 1. initialize the monorepo
 2. implement the contracts and schemas
 3. implement the Rust validation/export core
-4. implement the TypeScript Blockbench plugin shell
-5. support loading/saving `.zxmodel`
+4. implement the TypeScript standalone desktop shell and Tauri bridge
+5. support loading/saving `.zxmodel` through the desktop document flow
 6. support module placement and snap/connect logic
 7. support constrained deformation on authored regions
 8. support material zone assignment
@@ -47,27 +47,25 @@ Give Codex the entire folder. This is better.
 1. Read:
    - `AGENTS.md`
    - `MASTER_SPEC.md`
+   - `codex/STANDALONE_PIVOT.md`
    - `codex/00-OVERNIGHT-RUNBOOK.md`
 
-2. Start the trunk/bootstrap task:
-   - `codex/prompts/00-MASTER-ORCHESTRATOR.md`
+2. Start the launch/bootstrap task:
+   - `codex/prompts/00-LAUNCH-STANDALONE.md`
 
-3. Once the skeleton exists, split parallel tasks:
-   - `codex/prompts/01-BOOTSTRAP.md`
-   - `codex/prompts/02-CONTRACTS-SCHEMAS.md`
-   - `codex/prompts/03-RUST-CORE-VALIDATOR.md`
-   - `codex/prompts/04-PLUGIN-SHELL.md`
-   - `codex/prompts/05-ASSEMBLY-DEFORMATION.md`
+3. Build the headless and bridge foundations:
+   - `codex/prompts/01-BOOTSTRAP-AND-CONTRACTS.md`
+   - `codex/prompts/02-FIXTURES-AND-DOMAIN.md`
+   - `codex/prompts/03-VALIDATOR-AND-EXPORT.md`
+   - `codex/prompts/04-CLI.md`
 
-4. After those land, run:
-   - `codex/prompts/06-PAINTING.md`
-   - `codex/prompts/07-RIGGING-EXPORT.md`
-   - `codex/prompts/08-LLM-COMMANDS.md`
+4. Then harden the desktop shell workflows:
+   - `codex/prompts/05-PLUGIN-SHELL.md` (legacy filename; desktop shell scope)
+   - `codex/prompts/06-PLUGIN-WORKFLOWS.md` (legacy filename; desktop workflow scope)
 
 5. Finish with:
-   - `codex/prompts/09-HARDENING-RELEASE.md`
-   - `codex/prompts/10-MERGE-REVIEW.md`
-   - `codex/prompts/11-RECOVERY-LOOP.md` if red
+   - `codex/prompts/07-ACCEPTANCE-AND-CI.md`
+   - `codex/prompts/08-GAP-REPORT-AND-HANDOFF.md`
 
 ## What “complete” means here
 
@@ -81,7 +79,7 @@ A “complete overnight run” means:
 
 It does **not** mean:
 - every long-term feature in the PRD is production-polished
-- every UI interaction is host-integrated and manually smoke tested
+- every UI interaction is fully desktop-integrated and manually smoke tested
 - every future asset category is fully supported
 
 ## Recommended human review the next morning

@@ -8,35 +8,38 @@ This file defines the intended repository structure and implementation conventio
 
 - one Git repository
 - Rust workspace under `crates/`
-- TypeScript plugin under `plugin/`
+- TypeScript desktop shell under `desktop/`
+- Tauri backend under `desktop/src-tauri/`
 - generated schemas under `contracts/generated/`
 - fixtures under `fixtures/`
 - canonical examples under `examples/`
 - all major commands exposed through root scripts or a `justfile`
+- `plugin/` may remain as legacy scaffolding, but it is not the primary product path
 
 ## 3. Proposed root files
 
 ```text
 .
-├─ AGENTS.md
-├─ MASTER_SPEC.md
-├─ 00-START-HERE.md
-├─ Cargo.toml
-├─ rust-toolchain.toml
-├─ package.json
-├─ pnpm-workspace.yaml
-├─ tsconfig.base.json
-├─ justfile            # or Makefile
-├─ .editorconfig
-├─ .gitignore
-├─ .github/workflows/ci.yml
-├─ docs/
-├─ codex/
-├─ contracts/
-├─ crates/
-├─ plugin/
-├─ fixtures/
-└─ examples/
+|- AGENTS.md
+|- MASTER_SPEC.md
+|- 00-START-HERE.md
+|- Cargo.toml
+|- rust-toolchain.toml
+|- package.json
+|- pnpm-workspace.yaml
+|- tsconfig.base.json
+|- justfile            # or Makefile
+|- .editorconfig
+|- .gitignore
+|- .github/workflows/ci.yml
+|- docs/
+|- codex/
+|- contracts/
+|- crates/
+|- desktop/
+|- plugin/             # legacy scaffold, not the active delivery surface
+|- fixtures/
+`- examples/
 ```
 
 ## 4. Suggested crate breakdown
@@ -79,41 +82,32 @@ This file defines the intended repository structure and implementation conventio
 - command line entry points
 
 ### `polybash-wasm`
-- wasm-bindgen interface to selected core functions
+- optional wasm-bindgen interface to selected core functions
 
-## 5. Suggested plugin layout
+## 5. Suggested desktop layout
 
 ```text
-plugin/
-├─ package.json
-├─ tsconfig.json
-├─ vitest.config.ts
-├─ esbuild.config.mjs
-├─ src/
-│  ├─ index.ts
-│  ├─ bridge/
-│  │  ├─ coreFacade.ts
-│  │  └─ wasmLoader.ts
-│  ├─ adapters/
-│  │  ├─ blockbenchHost.ts
-│  │  └─ mockHost.ts
-│  ├─ controllers/
-│  │  ├─ projectController.ts
-│  │  ├─ assemblyController.ts
-│  │  ├─ deformationController.ts
-│  │  ├─ materialController.ts
-│  │  ├─ rigController.ts
-│  │  └─ validationController.ts
-│  ├─ state/
-│  │  ├─ store.ts
-│  │  ├─ selectors.ts
-│  │  └─ actions.ts
-│  ├─ ui/
-│  │  ├─ panels/
-│  │  ├─ dialogs/
-│  │  └─ viewmodels/
-│  └─ tests/
-└─ dist/
+desktop/
+|- package.json
+|- tsconfig.json
+|- vite.config.ts
+|- index.html
+|- src/
+|  |- main.ts
+|  |- documentPaths.ts
+|  |- documentInspector.ts
+|  |- sceneProjection.ts
+|  |- viewportController.ts
+|  |- styles.css
+|  |- types.ts
+|  `- *.spec.ts
+`- src-tauri/
+   |- Cargo.toml
+   |- tauri.conf.json
+   |- capabilities/
+   `- src/
+      |- main.rs
+      `- lib.rs
 ```
 
 ## 6. Contract generation strategy
@@ -122,8 +116,8 @@ Recommended flow:
 1. define contracts in Rust
 2. derive JSON Schema
 3. copy or generate schema files into `contracts/generated/`
-4. consume schemas from TypeScript using AJV
-5. add parity tests to ensure plugin expectations match Rust output
+4. consume schemas from TypeScript using AJV or equivalent runtime validation
+5. add parity tests to ensure desktop expectations match Rust output
 
 ## 7. Style guide
 
@@ -135,15 +129,15 @@ Recommended flow:
 - document public APIs
 
 ### TypeScript
-- controllers should be framework-light and testable
-- host APIs must stay behind adapters
-- UI should consume viewmodels, not raw domain mutation logic
-- avoid plugin-wide mutable globals beyond a single state root
+- workflow modules should be framework-light and testable
+- native and Tauri APIs must stay behind adapters or narrow command wrappers
+- UI should consume projections and typed workflow state, not raw domain mutation logic
+- avoid desktop-wide mutable globals beyond a single state root
 
 ## 8. Commit and branch strategy
 
 Recommended:
-- one work package per branch/worktree
+- one work package per branch or worktree
 - keep changesets cohesive
 - merge contracts before dependent work
 - do not stack unrelated risky changes in one agent task
@@ -190,12 +184,12 @@ Suggested intent:
 3. implement minimal change
 4. run targeted test
 5. run broader suite
-6. update docs/examples if contract changed
+6. update docs or examples if contract changed
 
 ## 12. First release artifact set
 
 The first release should include:
-- plugin bundle
+- desktop bundle or runnable desktop build instructions
 - CLI binary or instructions
 - example style pack
 - example fighter project

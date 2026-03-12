@@ -1,0 +1,27 @@
+[package]
+name = "polybash-desktop"
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+build = "build.rs"
+
+[lib]
+name = "polybash_desktop"
+path = "src/lib.rs"
+
+[dependencies]
+base64 = "0.22"
+polybash-contracts = { path = "../../crates/polybash-contracts" }
+polybash-domain = { path = "../../crates/polybash-domain" }
+polybash-export = { path = "../../crates/polybash-export" }
+polybash-validate = { path = "../../crates/polybash-validate" }
+serde = { workspace = true }
+tauri = { version = "2", features = [] }
+tauri-plugin-dialog = "2"
+thiserror = { workspace = true }
+
+[build-dependencies]
+tauri-build = { version = "2", features = [] }
+
+[dev-dependencies]
+tempfile.workspace = true

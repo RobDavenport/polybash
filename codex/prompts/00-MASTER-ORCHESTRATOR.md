@@ -1,4 +1,4 @@
-# Prompt 00 — Master Orchestrator
+# Prompt 00 - Master Orchestrator
 
 You are implementing **PolyBash**.
 
@@ -8,24 +8,27 @@ Before editing code:
 3. read `docs/04-TDD-QUALITY-GATES.md`
 4. read `docs/05-ACCEPTANCE-TEST-MATRIX.md`
 5. read `codex/taskboard.yaml`
+6. read `codex/STANDALONE_PIVOT.md`
 
 ## Mission
 
 Deliver **M1: the walking skeleton**.
 
 Do not try to finish the entire long-term product. Finish the first complete vertical slice defined by the docs.
+Treat the standalone desktop app as the active product path.
 
 ## Hard rules
 
-- Follow **Red → Green → Refactor** for every work item.
+- Follow **Red -> Green -> Refactor** for every work item.
 - Start from failing tests or failing fixtures.
 - Keep the repository green.
 - Do not invent alternate architectures.
 - Do not move validation into UI-only code.
-- Do not bypass export or validation to “get something working”.
+- Do not bypass export or validation to get something working.
 - If a feature is too large, ship the thinnest correct slice and document the gap.
 - Preserve headless testability.
 - Be explicit about anything incomplete.
+- Prefer `desktop/` over `plugin/` for any new UI/app-shell work unless the task is explicitly about migration or deprecation.
 
 ## Required deliverable for this task
 
@@ -36,6 +39,7 @@ Create or verify:
 - first pass task execution plan
 - initial CI skeleton
 - initial folder layout matching the blueprint
+- standalone desktop orchestration path under `desktop/`
 
 ## Execution pattern
 

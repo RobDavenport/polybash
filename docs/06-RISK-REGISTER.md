@@ -9,14 +9,14 @@ This document exists to prevent the project from quietly turning into a DCC clon
 | ID | Risk | Impact | Likelihood | Mitigation |
 |---|---|---|---|---|
 | R-01 | Scope explodes toward mini-Blender | severe | high | keep module/region workflow; reject freeform feature creep |
-| R-02 | Blockbench host limitations slow progress | high | medium | keep core headless and plugin thin; use adapters and mocks |
+| R-02 | Desktop shell and viewport integration slow progress | high | medium | keep core headless and the desktop shell thin; use adapters, projections, and mocks |
 | R-03 | Rust/WASM boundary becomes brittle | medium | medium | keep payloads small, versioned, and fixture-tested |
 | R-04 | GLB export complexity stalls overnight progress | high | medium | keep exporter minimal and focused on canonical fixture path first |
 | R-05 | Painting scope balloons | medium | high | ship material zones and decals before advanced brush tooling |
 | R-06 | Rigging scope balloons | medium | high | ship rig metadata and templates before advanced weighting UI |
 | R-07 | LLM feature becomes gimmicky or unsafe | medium | high | use structured command DSL only; no direct opaque mesh edits |
 | R-08 | Validation becomes an afterthought | severe | medium | validator lives in core and blocks export on fatal errors |
-| R-09 | CI/headless coverage misses host issues | medium | medium | keep thin manual smoke checklist and clear separation of concerns |
+| R-09 | CI/headless coverage misses desktop-shell issues | medium | medium | keep thin manual smoke checklist and clear separation of concerns |
 | R-10 | Asset taxonomy becomes inconsistent | medium | medium | centralize style packs, connector taxonomy, and module descriptors |
 
 ## 3. Descoping order
@@ -59,11 +59,11 @@ If LLM integration introduces uncertainty:
 - ship example command fixtures
 - defer live provider integration
 
-### Host integration
-If GUI host behavior is unstable:
-- keep plugin shell buildable
-- maximize controller/adapter tests
-- defer richer in-host polish
+### Desktop integration
+If desktop shell behavior is unstable:
+- keep the desktop shell buildable
+- maximize controller, projection, and adapter tests
+- defer richer in-app polish
 
 ## 5. Technical debt policy
 
@@ -88,15 +88,15 @@ If the overnight run is incomplete, the morning triage order is:
 2. restore export/validate path
 3. restore project round-trip
 4. restore acceptance fixture integrity
-5. review plugin shell last
+5. review desktop shell last
 
 This keeps the codebase salvageable.
 
 ## 7. Risks to watch during human review
 
 Red flags that indicate the implementation drifted:
-- exporter is plugin-only and not in Rust
-- validation lives mostly in UI code
+- exporter is desktop-shell-only and not in Rust
+- validation lives mostly in desktop UI code
 - direct mesh editing supersedes module/region workflow
 - GLB export only works on one handcrafted example and is not tested
 - LLM path applies edits without preview

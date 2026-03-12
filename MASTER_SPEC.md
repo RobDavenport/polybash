@@ -1,11 +1,10 @@
-# MASTER_SPEC
+﻿# MASTER_SPEC
 This file is a consolidated source-of-truth bundle for PolyBash.
 Use it when an agent or collaborator needs one document instead of the full pack.
 
 
 
 ---
-
 ## Included from `AGENTS.md`
 
 # AGENTS.md
@@ -38,7 +37,7 @@ If there is a conflict:
 
 1. **TDD is mandatory.**
    - Every feature starts with a failing test, failing fixture, or failing contract check.
-   - Follow **Red → Green → Refactor** on every work item.
+   - Follow **Red 竊・Green 竊・Refactor** on every work item.
    - Do not write implementation-first code unless the work item is strictly mechanical and already covered by tests.
 
 2. **Keep trunk green.**
@@ -48,7 +47,7 @@ If there is a conflict:
 
 3. **Prefer the smallest vertical slice.**
    - If a full feature is too large, land the thinnest end-to-end slice that still satisfies the acceptance criteria.
-   - Do not expand scope to “nice to have” work until the current acceptance criteria are green.
+   - Do not expand scope to 窶從ice to have窶・work until the current acceptance criteria are green.
 
 4. **Validation is a product feature.**
    - Do not bypass validators to make tests pass.
@@ -61,9 +60,9 @@ If there is a conflict:
    - Avoid time-dependent or nondeterministic behavior in exported artifacts unless intentionally injected behind a seam.
 
 6. **Preserve architectural boundaries.**
-   - TypeScript plugin code handles UI, host integration, and orchestration.
+   - TypeScript desktop shell code handles UI, native integration adapters, and orchestration.
    - Rust core handles contracts, domain rules, validation, export logic, and deterministic transforms.
-   - Shared contracts must be versioned and test-covered.
+   - Shared contracts and desktop bridge payloads must be versioned and test-covered.
 
 7. **No hidden AI magic.**
    - LLM assistance must emit structured edit commands or structured suggestions.
@@ -73,11 +72,11 @@ If there is a conflict:
 ## Scope discipline
 
 ### Mandatory overnight target
-The “overnight” target is **not** the whole long-term product. It is the first complete walking skeleton:
+The 窶徙vernight窶・target is **not** the whole long-term product. It is the first complete walking skeleton:
 
 - monorepo scaffold
 - Rust workspace with contracts, validation, export core, and CLI
-- Blockbench plugin shell in TypeScript
+- standalone desktop shell in TypeScript with a Tauri bridge
 - `.zxmodel` authoring format
 - style pack loading
 - module placement and snap/connect logic
@@ -108,8 +107,9 @@ If a choice is unspecified, use these defaults:
 - authoring source format: `.zxmodel` JSON
 - export format: `.glb`
 - texture format: PNG
-- plugin language: TypeScript
-- plugin build: `pnpm` + `esbuild`
+- desktop UI language: TypeScript
+- desktop shell build: `pnpm` + `vite`
+- desktop bridge: Tauri
 - core language: Rust stable
 - schema generation: Rust source of truth with generated JSON Schema
 - TS runtime contract validation: AJV against generated schemas
@@ -165,11 +165,15 @@ Any natural-language-driven operation must:
 Do not invent alternate contracts when the examples or docs already define one.
 
 
+## OpenAI and Codex documentation lookup
+
+Always use the OpenAI developer documentation MCP server if you need to work with the OpenAI API, ChatGPT Apps SDK, Codex, or related docs without me having to explicitly ask.
+
 ---
 
 ## Included from `00-START-HERE.md`
 
-# PolyBash — Start Here
+# PolyBash 窶・Start Here
 
 This pack is designed to make an agentic build practical, not magical.
 
@@ -193,8 +197,8 @@ The overnight target is:
 1. initialize the monorepo
 2. implement the contracts and schemas
 3. implement the Rust validation/export core
-4. implement the TypeScript Blockbench plugin shell
-5. support loading/saving `.zxmodel`
+4. implement the TypeScript standalone desktop shell and Tauri bridge
+5. support loading/saving `.zxmodel` through the desktop document flow
 6. support module placement and snap/connect logic
 7. support constrained deformation on authored regions
 8. support material zone assignment
@@ -207,10 +211,10 @@ If all of that lands cleanly, the next pass can extend painting, rigging fidelit
 
 ## How to use this with Codex
 
-### Option A — give Codex one file
+### Option A 窶・give Codex one file
 Use `MASTER_SPEC.md` plus `AGENTS.md`.
 
-### Option B — give Codex the full pack
+### Option B 窶・give Codex the full pack
 Give Codex the entire folder. This is better.
 
 ### Recommended execution order
@@ -218,31 +222,29 @@ Give Codex the entire folder. This is better.
 1. Read:
    - `AGENTS.md`
    - `MASTER_SPEC.md`
+   - `codex/STANDALONE_PIVOT.md`
    - `codex/00-OVERNIGHT-RUNBOOK.md`
 
-2. Start the trunk/bootstrap task:
-   - `codex/prompts/00-MASTER-ORCHESTRATOR.md`
+2. Start the launch/bootstrap task:
+   - `codex/prompts/00-LAUNCH-STANDALONE.md`
 
-3. Once the skeleton exists, split parallel tasks:
-   - `codex/prompts/01-BOOTSTRAP.md`
-   - `codex/prompts/02-CONTRACTS-SCHEMAS.md`
-   - `codex/prompts/03-RUST-CORE-VALIDATOR.md`
-   - `codex/prompts/04-PLUGIN-SHELL.md`
-   - `codex/prompts/05-ASSEMBLY-DEFORMATION.md`
+3. Build the headless and bridge foundations:
+   - `codex/prompts/01-BOOTSTRAP-AND-CONTRACTS.md`
+   - `codex/prompts/02-FIXTURES-AND-DOMAIN.md`
+   - `codex/prompts/03-VALIDATOR-AND-EXPORT.md`
+   - `codex/prompts/04-CLI.md`
 
-4. After those land, run:
-   - `codex/prompts/06-PAINTING.md`
-   - `codex/prompts/07-RIGGING-EXPORT.md`
-   - `codex/prompts/08-LLM-COMMANDS.md`
+4. Then harden the desktop shell workflows:
+   - `codex/prompts/05-PLUGIN-SHELL.md` (legacy filename; desktop shell scope)
+   - `codex/prompts/06-PLUGIN-WORKFLOWS.md` (legacy filename; desktop workflow scope)
 
 5. Finish with:
-   - `codex/prompts/09-HARDENING-RELEASE.md`
-   - `codex/prompts/10-MERGE-REVIEW.md`
-   - `codex/prompts/11-RECOVERY-LOOP.md` if red
+   - `codex/prompts/07-ACCEPTANCE-AND-CI.md`
+   - `codex/prompts/08-GAP-REPORT-AND-HANDOFF.md`
 
-## What “complete” means here
+## What 窶彡omplete窶・means here
 
-A “complete overnight run” means:
+A 窶彡omplete overnight run窶・means:
 - the walking skeleton is implemented end to end
 - tests are present and green
 - acceptance coverage exists for every P0 requirement
@@ -252,7 +254,7 @@ A “complete overnight run” means:
 
 It does **not** mean:
 - every long-term feature in the PRD is production-polished
-- every UI interaction is host-integrated and manually smoke tested
+- every UI interaction is fully desktop-integrated and manually smoke tested
 - every future asset category is fully supported
 
 ## Recommended human review the next morning
@@ -278,7 +280,6 @@ It does **not** mean:
 - `codex/prompts/*.md`
 - `examples/*.json`
 
-
 ---
 
 ## Included from `docs/01-PRD.md`
@@ -298,10 +299,11 @@ It is intended to support:
 - vehicles
 - modular environment chunks
 
-The tool is built around:
+The product ships as a **standalone desktop application** with:
 - module-driven kitbashing
 - constrained shaping instead of full freeform modeling
-- palette/material assignment and lightweight painting
+- palette and material assignment
+- lightweight paint-layer support
 - rig templates and rig metadata
 - strict export validation
 - clean GLB export
@@ -325,7 +327,7 @@ Create a constrained 3D asset builder that:
 - feels approachable to non-expert modelers
 - still produces usable, game-ready meshes
 - preserves style consistency through style packs
-- avoids “mini-Blender” scope creep
+- avoids "mini-Blender" scope creep
 - can hand off to Blender for advanced animation when needed
 
 ## 4. Target users
@@ -337,11 +339,11 @@ Solo and small-team indie game developers making retro 3D games.
 Technical artists or designers who want to author variations quickly without deep modeling knowledge.
 
 ### Tertiary
-Writers/designers using LLM assistance to propose characters or props that can then be turned into structured editable assets.
+Writers and designers using LLM assistance to propose characters or props that can then be turned into structured editable assets.
 
 ## 5. Primary use cases
 
-1. Create a fighter character from a template, swap parts, adjust silhouette, assign palette/material zones, export to GLB, and continue animation in Blender.
+1. Create a fighter character from a template in the desktop app, swap parts, adjust silhouette, assign palette and material zones, export to GLB, and continue animation in Blender.
 2. Create a weapon or prop by assembling modules and adjusting a few guided deformation controls.
 3. Create modular environment chunks using connectors and a style pack with enforced texture and mesh budgets.
 4. Use natural language to request structured edits, preview them, and apply them safely.
@@ -357,7 +359,7 @@ Writers/designers using LLM assistance to propose characters or props that can t
 - Make validation a first-class feature rather than an afterthought.
 
 ### Engineering goals
-- Maintain a strict separation between UI/host logic and deterministic core logic.
+- Maintain a strict separation between desktop UI logic and deterministic core logic.
 - Drive development with TDD.
 - Make contracts explicit and versioned.
 - Make all critical paths testable in headless CI.
@@ -369,51 +371,52 @@ PolyBash v1 is **not**:
 - a sculpting tool
 - a node material editor
 - a full animation package
-- a cloth/hair simulation tool
+- a cloth or hair simulation tool
 - a procedural modeling graph tool
 - a marketplace platform
 - an unconstrained text-to-mesh generator
 
 ## 8. UX principles
 
-1. **Guided over open-ended**  
+1. **Guided over open-ended**
    Prefer templates, constrained edits, and high-signal controls.
 
-2. **Game-ready by default**  
+2. **Game-ready by default**
    Export, budgets, and validation are always visible.
 
-3. **Beginner-friendly, not toy-like**  
+3. **Beginner-friendly, not toy-like**
    The system should feel approachable without preventing professional output.
 
-4. **Visual edits should map to clear data**  
+4. **Visual edits should map to clear data**
    Every user action should correspond to structured project data.
 
-5. **Safe LLM assistance**  
+5. **Safe LLM assistance**
    Natural-language input should produce reversible structured edits.
 
 ## 9. Product scope
 
 ## 9.1 Overnight target (P0 walking skeleton)
 
-The overnight target is the smallest end-to-end product slice that proves the architecture:
+The overnight target is the smallest end-to-end product slice that proves the standalone architecture:
 
-- create/open/save `.zxmodel`
+- create, open, and save `.zxmodel`
+- support native desktop document dialogs
 - load a style pack
 - load module descriptors
 - browse modules by category
-- place modules in a scene
-- connect modules using snap/connect rules
+- add and remove modules in a scene
+- attach and detach connectors using snap and compatibility rules
 - apply constrained deformations to authored regions
-- assign material zones from a palette/material preset
+- assign material zones from a palette or material preset
 - assign a rig template and socket metadata
-- export `.glb`
-- run validation and emit a report
+- export `.glb` through the Rust-owned export path
+- run validation and emit a report through the Rust-owned validation path
 - provide example fixtures and tests
 
 ## 9.2 V1 scope
 
 ### Asset authoring
-- templates for fighter, prop, weapon, vehicle, room chunk
+- templates for fighter, prop, weapon, vehicle, and room chunk
 - part library with category filters and tags
 - symmetry and mirroring support
 - connector-driven placement
@@ -423,13 +426,13 @@ The overnight target is the smallest end-to-end product slice that proves the ar
 ### Surface workflow
 - material slot assignment
 - palette presets
-- texture atlas generation/management
+- texture atlas generation and management
 - decals and basic paint layers
-- texture import/export
+- texture import and export
 
-### Rigging/export
+### Rigging and export
 - biped, mech, and vehicle rig templates
-- rigid / hybrid / smooth rig modes
+- rigid, hybrid, and smooth rig modes
 - sockets and engine metadata
 - GLB export
 - validation report
@@ -441,17 +444,18 @@ The overnight target is the smallest end-to-end product slice that proves the ar
 - validator-aware feedback
 
 ## 9.3 Deferred after v1
+
 - advanced paint brushes
 - smooth skin paint UI
 - animation timeline and editor
 - custom shader authoring
-- online sharing/distribution
+- online sharing and distribution
 - collaborative editing
 
 ## 10. Functional requirements
 
 ### FR-01 Project lifecycle
-The system must create, open, save, and version `.zxmodel` files.
+The system must create, open, save, and version `.zxmodel` files through the standalone desktop document workflow and the headless CLI.
 
 ### FR-02 Template initialization
 The system must initialize a new project from a supported template:
@@ -464,7 +468,7 @@ The system must initialize a new project from a supported template:
 ### FR-03 Style packs
 The system must load a style pack that defines:
 - budgets
-- palette/material presets
+- palette and material presets
 - connector taxonomy
 - rig templates
 - paint rules
@@ -475,15 +479,15 @@ The system must display modules by:
 - category
 - asset type
 - tags
-- compatibility with current style pack
+- compatibility with the current style pack
 
 ### FR-05 Placement
-The system must place module instances in the scene with transform metadata.
+The system must place module instances in the scene with transform metadata and stable instance ids.
 
-### FR-06 Snap/connect
-The system must support connector-based snapping with validation of compatible connector types.
+### FR-06 Snap and connect
+The system must support connector-based attachment and detachment with validation of compatible connector types.
 
-### FR-07 Symmetry/mirroring
+### FR-07 Symmetry and mirroring
 The system must support mirrored placement or mirrored module generation where applicable.
 
 ### FR-08 Guided deformation
@@ -495,22 +499,22 @@ The system must support constrained deformations on authored regions, including 
 - twist
 
 ### FR-09 Material zones
-The system must allow per-zone material/palette assignments.
+The system must allow per-zone material and palette assignments.
 
 ### FR-10 Paint layers
 The system must support a minimal paint layer model:
 - fill
 - decal
-- optional brush stroke placeholder in first slice
+- optional brush stroke placeholder in the first slice
 
 ### FR-11 Rig templates
 The system must apply rig templates and store rig metadata on the asset.
 
 ### FR-12 Socket metadata
-The system must support named sockets/hardpoints bound to bones or transforms.
+The system must support named sockets or hardpoints bound to bones or transforms.
 
 ### FR-13 Export
-The system must export a GLB file suitable for downstream tools and engine ingestion.
+The system must export a GLB file suitable for downstream tools and engine ingestion from both the desktop shell and the CLI.
 
 ### FR-14 Validation
 The system must validate:
@@ -536,13 +540,13 @@ The system must define a structured command DSL for natural-language-assisted ed
 The same input project and style pack must produce the same export and report.
 
 ### NFR-02 Headless testability
-Critical logic must be runnable in CI without a GUI host.
+Critical logic must be runnable in CI without the desktop GUI host.
 
 ### NFR-03 Performance
 Common operations on a typical fighter asset should feel interactive on a normal development machine.
 
 ### NFR-04 Safety
-Validation and import/export paths must fail explicitly on invalid inputs.
+Validation and import or export paths must fail explicitly on invalid inputs.
 
 ### NFR-05 Compatibility
 The system must keep authoring and export contracts versioned and backwards-conscious.
@@ -559,19 +563,20 @@ Critical core logic must meet the coverage and test gate requirements defined in
 - A new user can produce a basic fighter asset in under 20 minutes using a template and modules.
 - The export path works on all canonical fixtures.
 - Validation catches out-of-budget fixtures before export acceptance.
-- The authoring format stays editable after repeated load/save cycles.
+- The authoring format stays editable after repeated load and save cycles.
 
 ### Engineering metrics
 - All P0 acceptance criteria are automated except explicitly documented manual smoke checks.
-- Core contract/validation/export crates meet coverage targets.
-- The plugin bundle builds reproducibly from a clean environment.
+- Core contract, validation, and export crates meet coverage targets.
+- The standalone desktop shell and core workspace build reproducibly from a clean environment.
 
 ## 13. Constraints and assumptions
 
-- The project will avoid building a full standalone DCC in the first implementation.
-- Blockbench is the initial editor host for v1.
+- The first implementation is a focused standalone desktop authoring tool, not a full general-purpose DCC.
+- The desktop shell owns the editor chrome, document workflow, and viewport integration for v1.
 - Rust is the deterministic core.
-- TypeScript is the plugin layer.
+- TypeScript powers the desktop UI shell.
+- Tauri is the desktop bridge layer.
 - Blender remains the downstream animation tool.
 - GLB is the export target.
 - `.zxmodel` is the authoring source of truth.
@@ -580,12 +585,11 @@ Critical core logic must meet the coverage and test gate requirements defined in
 
 The following are treated as resolved defaults for v1 so implementation can begin without drift:
 
-- animation authoring is downstream, not in-scope for overnight
+- animation authoring is downstream, not in scope for overnight
 - style packs own budgets and palettes
 - LLM assistance uses structured commands only
 - direct freeform mesh editing is not the main workflow
 - validation runs both during authoring and export
-
 
 ---
 
@@ -595,17 +599,18 @@ The following are treated as resolved defaults for v1 so implementation can begi
 
 ## 1. Architecture summary
 
-PolyBash is a **hybrid editor + deterministic core** system.
+PolyBash is a **standalone desktop editor + deterministic core** system.
 
-- **Editor host:** Blockbench plugin
-- **Plugin layer:** TypeScript
+- **Editor shell:** standalone desktop application
+- **Desktop UI layer:** TypeScript + web UI
+- **Desktop bridge:** Tauri commands into Rust services
 - **Core domain + contracts + export + validation:** Rust
 - **Primary authoring format:** `.zxmodel`
 - **Export target:** `.glb`
-- **Core distribution targets:** native CLI + WebAssembly bridge
+- **Core distribution targets:** native CLI + desktop bridge + optional WebAssembly bridge
 - **Headless validation target:** CI-friendly command line
 
-The architecture deliberately avoids turning the plugin host into the source of truth. The plugin is the interaction layer. The Rust core owns contracts, normalization, validation, and export semantics.
+The architecture deliberately avoids turning the desktop shell into the source of truth. The desktop UI is the interaction layer. The Rust core owns contracts, normalization, validation, command semantics, and export behavior.
 
 ## 2. Design principles
 
@@ -614,11 +619,11 @@ The architecture deliberately avoids turning the plugin host into the source of 
    - GLB is output, not the editable source of truth.
 
 2. **Deterministic core**
-   - export, validation, and contract logic must live in Rust
-   - the same behavior should be available to CLI and plugin via shared core
+   - export, validation, and contract logic live in Rust
+   - the same behavior should be available to CLI and desktop shell via the shared core
 
 3. **Headless first**
-   - anything critical must be testable without the Blockbench GUI host
+   - anything critical must be testable without the desktop GUI running
 
 4. **Constrained editing**
    - the domain model is module-based and region-based, not arbitrary topology-based
@@ -630,12 +635,12 @@ The architecture deliberately avoids turning the plugin host into the source of 
 
 ```mermaid
 flowchart LR
-  U[User] --> BB[Blockbench Plugin UI]
-  BB --> CTRL[TS Controllers + Host Adapters]
-  CTRL --> WASM[Rust Core via WASM]
-  WASM --> DOM[Domain Rules]
-  WASM --> VAL[Validator]
-  WASM --> EXP[GLB Exporter]
+  U[User] --> UI[Desktop UI Shell]
+  UI --> VM[TS View Models and Workflow Modules]
+  VM --> TAURI[Tauri Command Bridge]
+  TAURI --> DOM[Domain Rules]
+  TAURI --> VAL[Validator]
+  TAURI --> EXP[GLB Exporter]
   DOM --> ZX[.zxmodel]
   VAL --> RPT[asset.report.json]
   EXP --> GLB[asset.glb]
@@ -646,17 +651,17 @@ flowchart LR
 
 ## 4. System responsibilities
 
-### 4.1 Blockbench plugin responsibilities
-- panels and UI commands
-- library browsing and category filters
-- host scene interaction
-- transform controls
-- edit orchestration
-- loading/saving project data to/from `.zxmodel`
-- calling the Rust/WASM bridge for validation and export
-- displaying validation results
+### 4.1 Desktop shell responsibilities
+
+- document creation, open, and save flows
+- panels, inspectors, module browsing, and workflow commands
+- viewport interaction, selection, and gizmo orchestration
+- edit orchestration and UI state
+- calling Rust services through the desktop bridge
+- surfacing validation results, export feedback, and actionable errors
 
 ### 4.2 Rust core responsibilities
+
 - contract types and schema generation
 - domain normalization
 - connector compatibility checks
@@ -668,56 +673,87 @@ flowchart LR
 - structured command DSL validation for LLM edits
 
 ### 4.3 CLI responsibilities
+
 - batch validate
 - batch export
 - headless fixture tests
 - CI integration
 - developer diagnostics
 
-## 5. Repository structure
+### 4.4 Desktop bridge responsibilities
+
+- narrow, versioned command surface between UI and Rust
+- input and output serialization at the process boundary
+- typed error translation into desktop-safe responses
+- reuse of the same core services exercised by the CLI
+
+## 5. Current implemented desktop workflows
+
+The current standalone walking skeleton already includes:
+
+- native open and save dialogs
+- canonical load and explicit path-based load
+- fighter template creation from a style pack
+- module add and remove
+- transform edits through typed commands
+- connector attach and detach
+- region parameter edits through typed commands
+- material zone edits through typed commands
+- rig template selection
+- socket metadata authoring
+- Rust-owned validation and export preview
+
+These flows live in the desktop app shell, but the underlying state transitions, validation, and export semantics remain Rust-owned.
+
+## 6. Repository structure
 
 ```text
 polybash/
-├─ AGENTS.md
-├─ MASTER_SPEC.md
-├─ docs/
-├─ codex/
-├─ examples/
-├─ contracts/
-│  └─ generated/
-├─ crates/
-│  ├─ polybash-contracts/
-│  ├─ polybash-domain/
-│  ├─ polybash-ops/
-│  ├─ polybash-validate/
-│  ├─ polybash-export/
-│  ├─ polybash-llm/
-│  ├─ polybash-cli/
-│  └─ polybash-wasm/
-├─ plugin/
-│  ├─ src/
-│  │  ├─ adapters/
-│  │  ├─ controllers/
-│  │  ├─ state/
-│  │  ├─ ui/
-│  │  ├─ bridge/
-│  │  └─ tests/
-│  ├─ scripts/
-│  └─ dist/
-├─ fixtures/
-│  ├─ projects/
-│  ├─ stylepacks/
-│  ├─ reports/
-│  └─ exports/
-├─ .github/workflows/
-└─ tools/
+|- AGENTS.md
+|- MASTER_SPEC.md
+|- docs/
+|- codex/
+|- examples/
+|- contracts/
+|  `- generated/
+|- crates/
+|  |- polybash-contracts/
+|  |- polybash-domain/
+|  |- polybash-ops/
+|  |- polybash-validate/
+|  |- polybash-export/
+|  |- polybash-llm/
+|  |- polybash-cli/
+|  `- polybash-wasm/
+|- desktop/
+|  |- src/
+|  |  |- main.ts
+|  |  |- documentPaths.ts
+|  |  |- documentInspector.ts
+|  |  |- sceneProjection.ts
+|  |  |- viewportController.ts
+|  |  |- types.ts
+|  |  `- colocated desktop UI tests
+|  `- src-tauri/
+|     |- src/
+|     |  |- main.rs
+|     |  `- lib.rs
+|     `- capabilities/
+|- plugin/                 # legacy scaffold, not the active product path
+|- fixtures/
+|  |- projects/
+|  |- stylepacks/
+|  |- reports/
+|  `- exports/
+`- .github/workflows/
 ```
 
-## 6. Data model overview
+## 7. Data model overview
 
-## 6.1 Core entities
+## 7.1 Core entities
 
 ### Project
+
 The top-level editable document.
 
 Fields:
@@ -732,13 +768,14 @@ Fields:
 - history metadata
 
 ### StylePack
+
 Defines the rules for a coherent asset family.
 
 Fields:
-- id/version
+- id and version
 - supported asset types
-- triangle/material/texture budgets
-- palettes/material presets
+- triangle, material, and texture budgets
+- palettes and material presets
 - allowed module categories
 - connector taxonomy
 - deformation limits
@@ -746,12 +783,13 @@ Fields:
 - paint rules
 
 ### ModuleDescriptor
+
 Defines a reusable asset module.
 
 Fields:
-- id/version
+- id and version
 - asset type
-- tags/category
+- tags and category
 - connector list
 - region list
 - material zones
@@ -761,6 +799,7 @@ Fields:
 - symmetry metadata
 
 ### ModuleInstance
+
 Placement of a module descriptor inside a project.
 
 Fields:
@@ -773,6 +812,7 @@ Fields:
 - optional mirror metadata
 
 ### RigTemplate
+
 Defines a rig preset.
 
 Fields:
@@ -785,7 +825,8 @@ Fields:
 - export hints
 
 ### ValidationReport
-Structured output for authoring/export checks.
+
+Structured output for authoring and export checks.
 
 Fields:
 - summary stats
@@ -796,7 +837,7 @@ Fields:
 - source versions
 - export status
 
-## 6.2 Canonical formats
+## 7.2 Canonical formats
 
 ### `.zxmodel`
 Editable project document.
@@ -808,14 +849,15 @@ Versioned style pack.
 Versioned module descriptor.
 
 ### `asset.report.json`
-Validation/export report.
+Validation and export report.
 
 ### `.glb`
 Interchange artifact for downstream tools and engine ingestion.
 
-## 7. Proposed Rust workspace
+## 8. Rust workspace
 
-## 7.1 `polybash-contracts`
+### 8.1 `polybash-contracts`
+
 Responsibilities:
 - canonical Rust structs
 - serde support
@@ -823,29 +865,25 @@ Responsibilities:
 - version identifiers
 - shared enums and ids
 
-Recommended crates:
-- `serde`
-- `serde_json`
-- `schemars`
-- `thiserror`
-- `uuid` or typed ids if desired
+### 8.2 `polybash-domain`
 
-## 7.2 `polybash-domain`
 Responsibilities:
 - project normalization
 - command application
 - invariant checks
 - basic state transitions
-- load/save services
+- load and save services
 
-## 7.3 `polybash-ops`
+### 8.3 `polybash-ops`
+
 Responsibilities:
 - connector math
 - transform helpers
 - region deformation math
 - bounding box and metric calculations
 
-## 7.4 `polybash-validate`
+### 8.4 `polybash-validate`
+
 Responsibilities:
 - style pack validation
 - budget validation
@@ -853,74 +891,104 @@ Responsibilities:
 - connector integrity validation
 - export readiness validation
 
-## 7.5 `polybash-export`
+### 8.5 `polybash-export`
+
 Responsibilities:
 - transform normalized project into scene payload
 - build GLB
 - emit report statistics
-- optional extras metadata
+- attach export metadata
 
-## 7.6 `polybash-llm`
+### 8.6 `polybash-llm`
+
 Responsibilities:
 - define structured edit command DSL
 - validate command payloads
 - translate domain-safe command sequences into project mutations
 
-Note: first implementation can omit live model calls and focus on the command contract.
+Note: the first implementation can omit live model calls and focus on the command contract.
 
-## 7.7 `polybash-wasm`
+### 8.7 `polybash-wasm`
+
 Responsibilities:
-- expose selected Rust core functions to TypeScript:
-  - validate project
-  - preview command application
-  - apply command
-  - export project
-  - compute report
-  - load style pack
+- expose selected Rust core functions to TypeScript when a browser-facing or embedded web target is needed
+- maintain parity tests for validate and export behavior
 
-## 7.8 `polybash-cli`
+This is a secondary surface, not the primary desktop integration path.
+
+### 8.8 `polybash-cli`
+
 Responsibilities:
 - headless export and validation
 - fixture runners
 - developer commands
 
-## 8. Proposed TypeScript plugin structure
+## 9. Desktop TypeScript surface
 
-### `adapters/`
-Ports to Blockbench APIs and host-specific seams.
+The current desktop package is intentionally thin and uses flat modules rather than a large framework:
 
-### `controllers/`
-Use-case orchestration, command dispatch, workflow logic.
+- `main.ts`
+  - app shell
+  - Tauri command invocation
+  - document actions
+  - inspector event wiring
+- `documentPaths.ts`
+  - native dialog path normalization
+  - save-path suggestion helpers
+- `documentInspector.ts`
+  - module cards
+  - module library projection
+  - connector options
+  - rig detail projection
+- `sceneProjection.ts`
+  - deterministic low-poly proxy scene projection
+- `viewportController.ts`
+  - Three.js viewport mounting and selection callbacks
+- `types.ts`
+  - desktop-facing TypeScript types
+- colocated `*.spec.ts`
+  - headless desktop UI workflow coverage
 
-### `state/`
-In-memory editor state, derived selectors, undo stack metadata.
+## 10. Boundary contract: desktop UI <-> core
 
-### `ui/`
-Panels, dialogs, module browser, validation panel.
+The desktop UI must not reach into Rust internals conceptually. Cross-boundary communication should be narrow and versioned.
 
-### `bridge/`
-WASM boundary and schema runtime validation.
+Current implemented commands include:
+- `load_canonical_document_command`
+- `create_fighter_template_command`
+- `load_document_command`
+- `save_project_command`
+- `add_module_instance_command`
+- `remove_module_instance_command`
+- `apply_edit_command_command`
+- `set_connector_attachment_command`
+- `clear_connector_attachment_command`
+- `validate_document_command`
+- `export_document_command`
 
-### `tests/`
-Controller-level unit tests and adapter contract tests.
+Conceptually, these map to:
+- load project
+- save project
+- validate project
+- apply edit commands
+- set or clear connector relationships
+- export GLB bundle
 
-## 9. Boundary contract: plugin ↔ core
+The current typed edit-command path covers:
+- transform updates
+- region parameter updates
+- material assignment
+- rig template assignment
+- socket authoring
 
-The plugin must not reach into Rust internals conceptually. Cross-boundary communication should be narrow and versioned.
+## 11. Editing model
 
-Suggested boundary functions:
-- `load_project(json: string) -> Result<ProjectLoadResponse>`
-- `save_project(project: Project) -> Result<String>`
-- `validate_project(project, stylepack) -> ValidationReport`
-- `apply_edit_commands(project, commands) -> ProjectMutationResult`
-- `export_glb(project, stylepack, options) -> ExportBundle`
+## 11.1 Module-driven scene graph
 
-## 10. Editing model
-
-## 10.1 Module-driven scene graph
 Projects are built from module instances attached via connectors or free placement.
 
-## 10.2 Region-driven deformation
+## 11.2 Region-driven deformation
+
 Deformations are defined only on authored regions:
 - torso.chest
 - jaw.width
@@ -930,7 +998,8 @@ Deformations are defined only on authored regions:
 
 This avoids arbitrary mesh editing as a first-class concern.
 
-## 10.3 Material zones
+## 11.3 Material zones
+
 Every module exposes explicit material zones:
 - primary
 - trim
@@ -941,14 +1010,15 @@ Every module exposes explicit material zones:
 
 Material assignment happens at zone level before advanced painting.
 
-## 10.4 Paint layers
+## 11.4 Paint layers
+
 Paint sits on top of material zones:
 - fill
 - decal
 - optional brush layer
-- future weathering/grime layer
+- future weathering layer
 
-## 11. LLM command DSL
+## 12. LLM command DSL
 
 LLM assistance must target a safe DSL.
 
@@ -988,14 +1058,14 @@ Rules:
 - preview mode computes diff without mutation
 - apply mode returns an undo payload
 
-## 12. Export pipeline
+## 13. Export pipeline
 
 ```mermaid
 flowchart TD
   A[.zxmodel + stylepack] --> B[normalize project]
   B --> C[validate project]
   C --> D[derive scene payload]
-  D --> E[assemble meshes/materials/rig]
+  D --> E[assemble meshes, materials, and rig]
   E --> F[emit GLB]
   C --> G[emit validation report]
   F --> H[write artifact bundle]
@@ -1007,7 +1077,7 @@ Export bundle:
 - `asset.report.json`
 - optional debug JSON in dev builds
 
-## 13. Validation pipeline
+## 14. Validation pipeline
 
 Validation stages:
 1. schema validity
@@ -1031,7 +1101,7 @@ Suggested message fields:
 - detail
 - suggested_fix
 
-## 14. Canonical budgets for first style pack
+## 15. Canonical budgets for first style pack
 
 These are recommended defaults, not engine law.
 
@@ -1058,21 +1128,21 @@ These are recommended defaults, not engine law.
 - materials: 4
 - atlases: 2 x 512x512
 
-## 15. Error handling strategy
+## 16. Error handling strategy
 
 - never silently drop invalid modules
 - never auto-correct across style pack boundaries without a warning
 - fail closed on unknown schema versions
 - make validation human-readable and machine-readable
 
-## 16. Testability strategy by layer
+## 17. Testability strategy by layer
 
 ### Contracts
 - schema round-trip tests
 - version tests
 - rejection tests for invalid fixtures
 
-### Domain/ops
+### Domain and ops
 - property tests
 - invariant tests
 - golden tests for transform math
@@ -1082,29 +1152,29 @@ These are recommended defaults, not engine law.
 - fixture-based export tests
 - validation-before-export tests
 
-### Plugin
-- controller unit tests
-- adapter seam tests
-- headless command flow tests
+### Desktop UI
+- projection and inspector unit tests
+- desktop bridge seam tests
+- headless document workflow tests
 
-### Host integration
+### Desktop integration
 - minimal smoke checklist
 - do not make the first overnight pass depend on GUI automation
 
-## 17. Security and trust boundaries
+## 18. Security and trust boundaries
 
-- no arbitrary shell execution from plugin
+- no arbitrary shell execution from the desktop shell
 - no network requirement for core logic
 - LLM command application is mediated through DSL validation
 - importers must treat external files as untrusted
 
-## 18. Architecture decisions
+## 19. Architecture decisions
 
 ### ADR-001
-Use Blockbench plugin as the initial editor host instead of building a standalone editor first.
+Use a standalone desktop shell as the initial editor host instead of relying on an external modeling host.
 
 ### ADR-002
-Use Rust as the source of truth for contracts, validation, and export.
+Use Rust as the source of truth for contracts, validation, domain rules, and export.
 
 ### ADR-003
 Keep `.zxmodel` as the authoring format and `.glb` as export output.
@@ -1113,8 +1183,7 @@ Keep `.zxmodel` as the authoring format and `.glb` as export output.
 Define LLM integration as structured command generation, not direct mesh synthesis.
 
 ### ADR-005
-Target a headless-testable walking skeleton before host polish.
-
+Target a headless-testable walking skeleton before desktop-shell polish.
 
 ---
 
@@ -1131,31 +1200,37 @@ This WBS is designed for two horizons:
 
 ## 2. Milestones
 
-### M0 — Planning complete
+### M0 - Planning complete
+
 Done when:
 - PRD exists
 - architecture exists
 - acceptance matrix exists
 - prompt pack exists
 
-### M1 — Walking skeleton complete (overnight target)
+### M1 - Walking skeleton complete (overnight target)
+
 Done when:
 - repo scaffold exists
 - contracts compile
-- plugin shell builds
+- desktop shell builds
+- native document flow works
 - example projects validate
-- GLB export works on canonical fighter fixture
+- GLB export works on the canonical fighter fixture
 - report generation works
 - CI is green
 
-### M2 — Authoring MVP
+### M2 - Authoring MVP
+
 Done when:
-- assembly workflow works across fighter/weapon/prop
+- assembly workflow works across fighter, weapon, and prop
 - style packs and module browsing are usable
 - material zones and basic paint layers work
 - rig templates and sockets are present
+- connector attach and detach workflows are usable from the desktop shell
 
-### M3 — V1 complete
+### M3 - V1 complete
+
 Done when:
 - characters, props, vehicles, and chunks are all supported
 - hybrid rigging exists
@@ -1173,25 +1248,26 @@ Done when:
 | WP-04 | Geometry ops | connector math, transforms, region params | WP-03 | core | P0 |
 | WP-05 | Validator | typed validation pipeline and report | WP-03, WP-04 | core | P0 |
 | WP-06 | Exporter | GLB export bundle | WP-03, WP-05 | core | P0 |
-| WP-07 | CLI | validate/export commands | WP-05, WP-06 | core | P0 |
-| WP-08 | WASM bridge | TS-facing core API | WP-05, WP-06 | bridge | P0 |
-| WP-09 | Plugin shell | buildable plugin, state model, adapter seams | WP-00, WP-01 | plugin | P0 |
-| WP-10 | Project workflow | create/open/save, style pack loading | WP-08, WP-09 | plugin | P0 |
-| WP-11 | Assembly workflow | browse/place/snap modules | WP-08, WP-09 | plugin | P0 |
-| WP-12 | Deformation workflow | region parameter editing | WP-08, WP-11 | plugin | P0 |
-| WP-13 | Material workflow | zone assignment and basic layer model | WP-08, WP-11 | plugin | P0 |
-| WP-14 | Rig metadata workflow | rig template + sockets | WP-08, WP-10 | plugin | P0 |
-| WP-15 | CI and quality gates | build/test/lint/coverage pipeline | WP-00 | qa | P0 |
+| WP-07 | CLI | validate and export commands | WP-05, WP-06 | core | P0 |
+| WP-08 | Desktop bridge | Tauri command surface and typed desktop payloads | WP-03, WP-05, WP-06 | bridge | P0 |
+| WP-09 | Desktop shell | buildable desktop app, state model, adapter seams | WP-00, WP-01, WP-08 | desktop | P0 |
+| WP-10 | Project workflow | create, open, save, style pack loading, native dialogs | WP-09 | desktop | P0 |
+| WP-11 | Assembly workflow | browse, add, remove, attach, and detach modules | WP-08, WP-09 | desktop | P0 |
+| WP-12 | Deformation workflow | region parameter editing | WP-08, WP-11 | desktop | P0 |
+| WP-13 | Material workflow | zone assignment and basic layer model | WP-08, WP-11 | desktop | P0 |
+| WP-14 | Rig metadata workflow | rig template and sockets | WP-08, WP-10 | desktop | P0 |
+| WP-15 | CI and quality gates | build, test, lint, and coverage pipeline | WP-00 | qa | P0 |
 | WP-16 | Acceptance harness | fixture-driven acceptance suite | WP-05, WP-06, WP-10..WP-14 | qa | P0 |
 | WP-17 | Release docs | README, usage notes, examples | WP-15, WP-16 | trunk | P0 |
-| WP-18 | Decal/paint extensions | basic paint UI and atlas ops | WP-13 | plugin | P1 |
-| WP-19 | Hybrid rigging | weighting modes and richer export | WP-14, WP-06 | core/plugin | P1 |
-| WP-20 | LLM command integration | prompt → DSL → preview/apply | WP-03, WP-08 | core/plugin | P1 |
-| WP-21 | Additional asset templates | vehicle/chunk polish | M1 | product | P1 |
+| WP-18 | Viewport and gizmo hardening | direct manipulation, transform gizmos, mirror polish | WP-11, WP-12 | desktop | P1 |
+| WP-19 | Hybrid rigging | weighting modes and richer export | WP-14, WP-06 | core/desktop | P1 |
+| WP-20 | LLM command integration | prompt -> DSL -> preview/apply | WP-03, WP-08 | core/desktop | P1 |
+| WP-21 | Secondary delivery surfaces | optional WASM or web embedding parity | M1 | bridge | P2 |
 
 ## 4. Detailed task decomposition
 
 ## WP-00 Program setup
+
 Tasks:
 - create monorepo layout
 - choose package manager and Rust workspace structure
@@ -1202,12 +1278,13 @@ Tasks:
 Done criteria:
 - `cargo test --workspace` runs
 - `pnpm test` runs
-- CI starts on push/PR
+- CI starts on push and PR
 - docs folder wired in
 
 ## WP-01 Contracts and schemas
+
 Tasks:
-- define ids/enums/types in Rust
+- define ids, enums, and types in Rust
 - define version block
 - generate JSON Schema
 - define report types
@@ -1220,6 +1297,7 @@ Done criteria:
 - contract tests are green
 
 ## WP-02 Example fixtures
+
 Tasks:
 - canonical fighter project
 - canonical style pack
@@ -1232,8 +1310,9 @@ Done criteria:
 - examples validate under schema
 
 ## WP-03 Rust domain core
+
 Tasks:
-- load/save model
+- load and save model
 - normalize project
 - apply edit commands
 - maintain invariants
@@ -1245,9 +1324,10 @@ Done criteria:
 - command application can preview and apply
 
 ## WP-04 Geometry ops
+
 Tasks:
 - connector compatibility logic
-- transform compose/decompose helpers
+- transform compose and decompose helpers
 - region parameter math
 - metrics helpers
 
@@ -1257,6 +1337,7 @@ Done criteria:
 - deterministic math paths are documented
 
 ## WP-05 Validator
+
 Tasks:
 - schema validity checks
 - style pack compatibility checks
@@ -1271,10 +1352,11 @@ Done criteria:
 - reports are stable snapshots
 
 ## WP-06 Exporter
+
 Tasks:
 - derive normalized scene payload
 - build GLB artifact
-- attach metadata/extras as needed
+- attach metadata and extras as needed
 - emit export stats
 
 Done criteria:
@@ -1284,6 +1366,7 @@ Done criteria:
 - exported artifact is referenced by snapshot or fixture tests
 
 ## WP-07 CLI
+
 Tasks:
 - `validate` command
 - `export` command
@@ -1295,55 +1378,62 @@ Done criteria:
 - CLI commands are integration-tested
 - errors are non-cryptic
 
-## WP-08 WASM bridge
+## WP-08 Desktop bridge
+
 Tasks:
-- export core functions to TS
-- define JS-friendly payloads
-- add bridge tests
+- expose core functions through Tauri commands
+- define desktop-safe payloads
+- add desktop bridge tests
 - wire error translation
 
 Done criteria:
-- TS can validate and export via bridge in tests
-- result parity exists between WASM and native fixture runs
+- the desktop shell can validate and export through the bridge in tests
+- add, remove, edit, and connector workflows cross the bridge with typed responses
+- bridge behavior reuses the same Rust services exercised by the CLI
 
-## WP-09 Plugin shell
+## WP-09 Desktop shell
+
 Tasks:
-- plugin entry point
+- desktop application entry point
 - state store
-- host adapters
+- desktop adapters and bridge clients
 - panel layout placeholders
 - command dispatch pipeline
 
 Done criteria:
-- plugin builds
-- controller tests pass
-- host adapter seams are mockable
+- desktop shell builds
+- controller or projection tests pass
+- desktop adapter seams are mockable
 
 ## WP-10 Project workflow
+
 Tasks:
 - new project
-- open/save project
+- native open and save project flow
 - style pack load
 - validation panel integration
 
 Done criteria:
 - project workflow tested headlessly
 - serialized output stable
-- validation surfaced in UI state
+- validation surfaced in desktop state and inspectors
 
 ## WP-11 Assembly workflow
+
 Tasks:
 - module browsing
-- placement
-- snap/connect
+- add and remove modules
+- connector attach and detach
 - mirror placement
 
 Done criteria:
-- can assemble fighter example from modules
-- snap/connect rules enforced
-- mirrored module instances handled
+- can assemble the fighter example from modules
+- connector rules are enforced
+- removal prunes dependent connector and decal state
+- mirrored module instances are handled
 
 ## WP-12 Deformation workflow
+
 Tasks:
 - region control UI model
 - update command generation
@@ -1351,11 +1441,12 @@ Tasks:
 - persistence to project file
 
 Done criteria:
-- representative regions editable
-- values clamped by style pack limits
+- representative regions are editable
+- values clamp by style pack limits
 - regression tests cover persistence
 
 ## WP-13 Material workflow
+
 Tasks:
 - material zone assignment
 - palette application
@@ -1363,11 +1454,12 @@ Tasks:
 - basic decal hook
 
 Done criteria:
-- zones assignable
-- palette constraints validated
-- report includes texture/material usage
+- zones are assignable
+- palette constraints validate
+- report includes texture and material usage
 
 ## WP-14 Rig metadata workflow
+
 Tasks:
 - rig template selection
 - socket assignment
@@ -1375,10 +1467,11 @@ Tasks:
 
 Done criteria:
 - fighter example can bind a rig template
-- socket metadata exported
+- socket metadata exports
 - validation catches missing required bones or sockets
 
 ## WP-15 CI and quality gates
+
 Tasks:
 - linting
 - formatting
@@ -1392,6 +1485,7 @@ Done criteria:
 - examples are checked in CI
 
 ## WP-16 Acceptance harness
+
 Tasks:
 - implement acceptance scenarios
 - link requirements to tests
@@ -1403,6 +1497,7 @@ Done criteria:
 - acceptance report is easy to review
 
 ## WP-17 Release docs
+
 Tasks:
 - usage notes
 - contribution guide
@@ -1416,24 +1511,29 @@ Done criteria:
 
 ## 5. Parallelization guidance
 
-### Parallel lane A — contracts
+### Parallel lane A - contracts
+
 Work on WP-01 and WP-02 first.
 
-### Parallel lane B — core
+### Parallel lane B - core
+
 Begin WP-03 and WP-04 once core contracts settle.
 
-### Parallel lane C — plugin shell
-Begin WP-09 early using mocked contracts, but re-sync after WP-01.
+### Parallel lane C - desktop bridge and shell
 
-### Parallel lane D — QA
+Begin WP-08 and WP-09 early using mocked data if necessary, then re-sync after WP-01.
+
+### Parallel lane D - QA
+
 Begin WP-15 immediately, then WP-16 as soon as acceptance scenarios stabilize.
 
 ### Merge order
-1. trunk/bootstrap
+
+1. trunk and bootstrap
 2. contracts
-3. core math/domain
-4. validator/export
-5. plugin shell
+3. core math and domain
+4. validator and export
+5. desktop bridge and shell
 6. workflows and acceptance harness
 7. hardening
 
@@ -1447,18 +1547,18 @@ Begin WP-15 immediately, then WP-16 as soon as acceptance scenarios stabilize.
 ### Phase O2
 - WP-02
 - WP-03
+- WP-08
 - WP-09
 
 ### Phase O3
 - WP-04
 - WP-05
-- WP-08
 - WP-10
+- WP-11
 
 ### Phase O4
 - WP-06
 - WP-07
-- WP-11
 - WP-12
 - WP-13
 - WP-14
@@ -1467,16 +1567,30 @@ Begin WP-15 immediately, then WP-16 as soon as acceptance scenarios stabilize.
 - WP-16
 - WP-17
 
-## 7. Descoping order if time or complexity explodes
+## 7. Current implementation notes
+
+The current repository already contains meaningful progress against M1:
+
+- the desktop shell builds
+- native document dialogs exist
+- module add and remove exists
+- typed transform edits exist through the shared command path
+- connector attach and detach exists
+- material and region edits exist through typed Rust-backed commands
+- rig template and socket metadata flows exist
+- validation and export are Rust-owned and reachable from the desktop shell
+
+The largest remaining gaps before a stronger standalone MVP are transform gizmos, richer direct manipulation, mirror workflow coverage, and deeper undo and diff semantics.
+
+## 8. Descoping order if time or complexity explodes
 
 Descoping order should preserve the walking skeleton:
 
 1. drop advanced painting before dropping material zones
 2. drop smooth rigging before dropping rig metadata
-3. drop extra asset categories before dropping fighter workflow
+3. drop extra asset categories before dropping the fighter workflow
 4. drop live LLM integration before dropping the command DSL
-5. drop GUI polish before dropping headless correctness
-
+5. drop desktop polish before dropping headless correctness
 
 ---
 
@@ -1488,10 +1602,10 @@ Descoping order should preserve the walking skeleton:
 
 This repository follows a strict quality model:
 
-- **Red → Green → Refactor** is mandatory.
+- **Red 竊・Green 竊・Refactor** is mandatory.
 - Validation is part of the feature, not a post-pass.
 - All critical paths must be headless-testable.
-- No code path is “temporarily” exempt from correctness without a tracked task.
+- No code path is 窶徼emporarily窶・exempt from correctness without a tracked task.
 
 ## 2. Required workflow for every task
 
@@ -1543,8 +1657,8 @@ Purpose:
 - validate cross-module workflows
 
 Examples:
-- project load → validate → export
-- plugin controller dispatch → WASM bridge → validation result
+- project load 竊・validate 竊・export
+- desktop workflow dispatch -> Tauri bridge -> validation result
 - CLI `validate` and `export` commands
 
 ## 3.5 Golden / snapshot tests
@@ -1571,10 +1685,10 @@ Examples:
 
 ## 3.7 Manual smoke tests
 Purpose:
-- cover a thin layer of host integration not suitable for the first overnight pass
+- cover a thin layer of desktop integration not suitable for the first overnight pass
 
 Examples:
-- load plugin in Blockbench
+- launch the desktop application
 - open example project
 - run export button once
 
@@ -1591,10 +1705,10 @@ Manual smoke tests must be minimal and clearly isolated from automated correctne
 - `polybash-llm`: 85% line coverage
 - `polybash-cli`: critical command paths covered by integration tests
 
-### TypeScript plugin minimums
-- controllers/state/bridge: 80% line coverage
+### TypeScript desktop minimums
+- workflow modules and bridge clients: 80% line coverage
 - adapters: test at least success/failure seams
-- UI rendering: smoke-level coverage acceptable if controller logic is fully tested
+- UI rendering: smoke-level coverage acceptable if workflow logic is fully tested
 
 ### Overall rule
 All P0 acceptance paths must be covered by tests, even if line coverage is imperfect.
@@ -1702,7 +1816,7 @@ The overnight target passes release gate only if:
 2. the fighter example exports to GLB
 3. validator report is generated
 4. project round-trip passes
-5. the plugin bundle builds
+5. the desktop shell builds
 6. CI is green
 7. documented gaps do not include any critical path blocker
 
@@ -1711,7 +1825,7 @@ The overnight target passes release gate only if:
 - implementation before failing tests
 - skipped tests without task ids
 - brittle assertions that mirror implementation internals rather than behavior
-- “fixing” bugs by weakening tests
+- 窶彷ixing窶・bugs by weakening tests
 - hidden fallback behavior
 - giant commits crossing unrelated work packages
 - undocumented schema changes
@@ -1721,9 +1835,8 @@ The overnight target passes release gate only if:
 Only after M1 is green:
 - fuzzing on import/deserialization
 - mutation testing for validator logic
-- heavier host integration smoke automation
+- heavier desktop integration smoke automation
 - performance benchmarks on representative assets
-
 
 ---
 
@@ -1739,24 +1852,25 @@ This matrix maps P0 requirements to concrete acceptance scenarios. It is intende
 
 | ID | Requirement(s) | Scenario | Automation level | Pass condition |
 |---|---|---|---|---|
-| AC-01 | FR-01, FR-02 | Create a new fighter project from template and save `.zxmodel` | automated | saved project validates against schema and reloads without drift |
-| AC-02 | FR-03 | Load style pack and enforce supported asset types | automated | incompatible asset/style combinations are rejected with typed error |
-| AC-03 | FR-04, FR-05 | Browse module library and place torso/head/arm/leg modules into project state | automated | module instances exist with stable ids and transforms |
-| AC-04 | FR-06 | Attach compatible modules via connectors | automated | snap succeeds and connector relationship is persisted |
-| AC-05 | FR-06 | Attempt incompatible connector attach | automated | validation fails with connector error code |
-| AC-06 | FR-07 | Mirror a left-arm module to create a right-arm pair | automated | mirrored module created with expected metadata |
-| AC-07 | FR-08 | Apply chest bulge and jaw width changes to authored regions | automated | values persist, clamp correctly, and affect normalized scene payload |
-| AC-08 | FR-09 | Assign material zones using a palette from the style pack | automated | zone assignments persist and validate |
-| AC-09 | FR-10 | Apply a fill layer and one decal layer | automated | paint layer model persists and report reflects usage |
-| AC-10 | FR-11, FR-12 | Assign fighter rig template and add `weapon_r` socket | automated | metadata exists and validation passes |
-| AC-11 | FR-13, FR-14, FR-15 | Export example fighter to GLB and emit report | automated | both files generated; report has no fatal errors |
-| AC-12 | FR-14 | Exceed triangle or texture budget in a negative fixture | automated | validator blocks export with budget error |
-| AC-13 | FR-16 | Preview and apply a structured edit command sequence | automated | preview yields diff; apply mutates project; undo payload exists |
-| AC-14 | FR-17 | Submit invalid command DSL payload | automated | rejected with typed command validation errors |
-| AC-15 | NFR-01 | Re-run export on same fixture | automated | outputs are byte-stable or metadata-stable as defined |
-| AC-16 | NFR-02 | Run validation and export from CLI in headless CI | automated | commands succeed in clean container |
-| AC-17 | NFR-06 | Surface validator errors in plugin state model | automated | controller state includes actionable error data |
-| AC-18 | Host smoke | Load built plugin and execute one example export via host | manual smoke | plugin loads and a user can reach export path once |
+| AC-01 | FR-01, FR-02 | Create a new fighter project from the desktop template flow and save `.zxmodel` | automated | saved project validates against schema and reloads without drift |
+| AC-02 | FR-01, FR-03 | Open an existing project and style pack through the desktop document flow | automated | project and style pack load into desktop state without typed errors |
+| AC-03 | FR-04, FR-05 | Browse the module library and add or remove torso, head, arm, and leg modules | automated | module instances exist with stable ids, and removal prunes dependent connector and decal state |
+| AC-04 | FR-06 | Attach compatible modules via connectors in the desktop inspector | automated | attachment succeeds and connector relationship is persisted |
+| AC-05 | FR-06 | Clear an existing connector attachment in the desktop inspector | automated | attachment is removed and other attachments remain intact |
+| AC-06 | FR-06 | Attempt incompatible connector attach | automated | validation or bridge command fails with a typed connector error |
+| AC-07 | FR-07 | Mirror a left-arm module to create a right-arm pair | automated | mirrored module is created with expected metadata |
+| AC-08 | FR-08 | Apply chest bulge and jaw width changes to authored regions | automated | values persist, clamp correctly, and affect normalized scene payload |
+| AC-09 | FR-09 | Assign material zones using a palette from the style pack | automated | zone assignments persist and validate |
+| AC-10 | FR-10 | Apply a fill layer and one decal layer | automated | paint layer model persists and report reflects usage |
+| AC-11 | FR-11, FR-12 | Assign a fighter rig template and add `weapon_r` socket metadata | automated | metadata exists and validation passes |
+| AC-12 | FR-13, FR-14, FR-15 | Export the example fighter to GLB and emit a report | automated | both artifacts are generated and the report has no fatal errors |
+| AC-13 | FR-14 | Exceed triangle or texture budget in a negative fixture | automated | validator blocks export with a budget error |
+| AC-14 | FR-16 | Preview and apply a structured edit command sequence | automated | preview yields a diff, apply mutates project state, and an undo payload exists |
+| AC-15 | FR-17 | Submit an invalid command DSL payload | automated | payload is rejected with typed command validation errors |
+| AC-16 | NFR-01 | Re-run export on the same fixture | automated | outputs are byte-stable or metadata-stable as defined |
+| AC-17 | NFR-02 | Run validation and export from the CLI in headless CI | automated | commands succeed in a clean container |
+| AC-18 | NFR-06 | Surface validator errors in desktop state or inspector projections | automated | desktop UI state includes actionable error data |
+| AC-19 | Desktop smoke | Launch the built desktop app, use native document flow, validate once, and export once | manual smoke | desktop shell launches and a user can reach the validation and export path once |
 
 ## 3. Minimal test file map
 
@@ -1772,15 +1886,13 @@ The exact names may vary, but the repo should end up with equivalents to:
 - `crates/polybash-export/tests/export_fighter.rs`
 - `crates/polybash-cli/tests/cli_validate.rs`
 - `crates/polybash-cli/tests/cli_export.rs`
+- `desktop/src-tauri/src/lib.rs` test module for desktop bridge and workflow coverage
 
 ### TypeScript
-- `plugin/src/tests/project-controller.spec.ts`
-- `plugin/src/tests/module-browser-controller.spec.ts`
-- `plugin/src/tests/assembly-controller.spec.ts`
-- `plugin/src/tests/deformation-controller.spec.ts`
-- `plugin/src/tests/material-controller.spec.ts`
-- `plugin/src/tests/validation-panel-state.spec.ts`
-- `plugin/src/tests/bridge.spec.ts`
+- `desktop/src/documentPaths.spec.ts`
+- `desktop/src/documentInspector.spec.ts`
+- `desktop/src/sceneProjection.spec.ts`
+- equivalent desktop workflow specs for document actions, connector UI, and validation display as those slices harden
 
 ## 4. Canonical acceptance fixture set
 
@@ -1795,7 +1907,7 @@ The exact names may vary, but the repo should end up with equivalents to:
 - `fixtures/stylepacks/invalid/missing_palette.stylepack.json`
 - `fixtures/commands/invalid/unknown_op.json`
 
-## 5. Pass/fail rules
+## 5. Pass and fail rules
 
 ### Pass
 - scenario behaves exactly as required
@@ -1806,15 +1918,15 @@ The exact names may vary, but the repo should end up with equivalents to:
 ### Fail
 - silent fallback occurs
 - export succeeds despite fatal validation issues
-- command apply mutates state without preview/undo support
-- host-specific assumptions leak into headless tests
-- acceptance scenario is only “manually verified” when it should be automated
+- command apply mutates state without preview or undo support
+- desktop-only assumptions leak into headless tests
+- acceptance scenario is only "manually verified" when it should be automated
 
 ## 6. Manual smoke checklist (thin)
 
-1. install or load plugin into Blockbench
-2. open canonical fighter example
-3. confirm module browser appears
+1. launch the desktop application
+2. open the canonical fighter example or create a new fighter from the desktop shell
+3. confirm the module library, inspector, and viewport appear
 4. run validation
 5. run export once
 6. verify `asset.glb` and `asset.report.json` exist
@@ -1828,7 +1940,6 @@ If a requirement cannot be automated in the first overnight pass, it must:
 - be explicitly marked as manual smoke
 - have a reason
 - have a follow-up task id
-
 
 ---
 
@@ -1845,14 +1956,14 @@ This document exists to prevent the project from quietly turning into a DCC clon
 | ID | Risk | Impact | Likelihood | Mitigation |
 |---|---|---|---|---|
 | R-01 | Scope explodes toward mini-Blender | severe | high | keep module/region workflow; reject freeform feature creep |
-| R-02 | Blockbench host limitations slow progress | high | medium | keep core headless and plugin thin; use adapters and mocks |
+| R-02 | Desktop shell and viewport integration slow progress | high | medium | keep core headless and the desktop shell thin; use adapters, projections, and mocks |
 | R-03 | Rust/WASM boundary becomes brittle | medium | medium | keep payloads small, versioned, and fixture-tested |
 | R-04 | GLB export complexity stalls overnight progress | high | medium | keep exporter minimal and focused on canonical fixture path first |
 | R-05 | Painting scope balloons | medium | high | ship material zones and decals before advanced brush tooling |
 | R-06 | Rigging scope balloons | medium | high | ship rig metadata and templates before advanced weighting UI |
 | R-07 | LLM feature becomes gimmicky or unsafe | medium | high | use structured command DSL only; no direct opaque mesh edits |
 | R-08 | Validation becomes an afterthought | severe | medium | validator lives in core and blocks export on fatal errors |
-| R-09 | CI/headless coverage misses host issues | medium | medium | keep thin manual smoke checklist and clear separation of concerns |
+| R-09 | CI/headless coverage misses desktop-shell issues | medium | medium | keep thin manual smoke checklist and clear separation of concerns |
 | R-10 | Asset taxonomy becomes inconsistent | medium | medium | centralize style packs, connector taxonomy, and module descriptors |
 
 ## 3. Descoping order
@@ -1895,11 +2006,11 @@ If LLM integration introduces uncertainty:
 - ship example command fixtures
 - defer live provider integration
 
-### Host integration
-If GUI host behavior is unstable:
-- keep plugin shell buildable
-- maximize controller/adapter tests
-- defer richer in-host polish
+### Desktop integration
+If desktop shell behavior is unstable:
+- keep the desktop shell buildable
+- maximize controller, projection, and adapter tests
+- defer richer in-app polish
 
 ## 5. Technical debt policy
 
@@ -1924,20 +2035,19 @@ If the overnight run is incomplete, the morning triage order is:
 2. restore export/validate path
 3. restore project round-trip
 4. restore acceptance fixture integrity
-5. review plugin shell last
+5. review desktop shell last
 
 This keeps the codebase salvageable.
 
 ## 7. Risks to watch during human review
 
 Red flags that indicate the implementation drifted:
-- exporter is plugin-only and not in Rust
-- validation lives mostly in UI code
+- exporter is desktop-shell-only and not in Rust
+- validation lives mostly in desktop UI code
 - direct mesh editing supersedes module/region workflow
 - GLB export only works on one handcrafted example and is not tested
 - LLM path applies edits without preview
 - docs and code disagree on contracts
-
 
 ---
 
@@ -1953,35 +2063,38 @@ This file defines the intended repository structure and implementation conventio
 
 - one Git repository
 - Rust workspace under `crates/`
-- TypeScript plugin under `plugin/`
+- TypeScript desktop shell under `desktop/`
+- Tauri backend under `desktop/src-tauri/`
 - generated schemas under `contracts/generated/`
 - fixtures under `fixtures/`
 - canonical examples under `examples/`
 - all major commands exposed through root scripts or a `justfile`
+- `plugin/` may remain as legacy scaffolding, but it is not the primary product path
 
 ## 3. Proposed root files
 
 ```text
 .
-├─ AGENTS.md
-├─ MASTER_SPEC.md
-├─ 00-START-HERE.md
-├─ Cargo.toml
-├─ rust-toolchain.toml
-├─ package.json
-├─ pnpm-workspace.yaml
-├─ tsconfig.base.json
-├─ justfile            # or Makefile
-├─ .editorconfig
-├─ .gitignore
-├─ .github/workflows/ci.yml
-├─ docs/
-├─ codex/
-├─ contracts/
-├─ crates/
-├─ plugin/
-├─ fixtures/
-└─ examples/
+|- AGENTS.md
+|- MASTER_SPEC.md
+|- 00-START-HERE.md
+|- Cargo.toml
+|- rust-toolchain.toml
+|- package.json
+|- pnpm-workspace.yaml
+|- tsconfig.base.json
+|- justfile            # or Makefile
+|- .editorconfig
+|- .gitignore
+|- .github/workflows/ci.yml
+|- docs/
+|- codex/
+|- contracts/
+|- crates/
+|- desktop/
+|- plugin/             # legacy scaffold, not the active delivery surface
+|- fixtures/
+`- examples/
 ```
 
 ## 4. Suggested crate breakdown
@@ -2024,41 +2137,32 @@ This file defines the intended repository structure and implementation conventio
 - command line entry points
 
 ### `polybash-wasm`
-- wasm-bindgen interface to selected core functions
+- optional wasm-bindgen interface to selected core functions
 
-## 5. Suggested plugin layout
+## 5. Suggested desktop layout
 
 ```text
-plugin/
-├─ package.json
-├─ tsconfig.json
-├─ vitest.config.ts
-├─ esbuild.config.mjs
-├─ src/
-│  ├─ index.ts
-│  ├─ bridge/
-│  │  ├─ coreFacade.ts
-│  │  └─ wasmLoader.ts
-│  ├─ adapters/
-│  │  ├─ blockbenchHost.ts
-│  │  └─ mockHost.ts
-│  ├─ controllers/
-│  │  ├─ projectController.ts
-│  │  ├─ assemblyController.ts
-│  │  ├─ deformationController.ts
-│  │  ├─ materialController.ts
-│  │  ├─ rigController.ts
-│  │  └─ validationController.ts
-│  ├─ state/
-│  │  ├─ store.ts
-│  │  ├─ selectors.ts
-│  │  └─ actions.ts
-│  ├─ ui/
-│  │  ├─ panels/
-│  │  ├─ dialogs/
-│  │  └─ viewmodels/
-│  └─ tests/
-└─ dist/
+desktop/
+|- package.json
+|- tsconfig.json
+|- vite.config.ts
+|- index.html
+|- src/
+|  |- main.ts
+|  |- documentPaths.ts
+|  |- documentInspector.ts
+|  |- sceneProjection.ts
+|  |- viewportController.ts
+|  |- styles.css
+|  |- types.ts
+|  `- *.spec.ts
+`- src-tauri/
+   |- Cargo.toml
+   |- tauri.conf.json
+   |- capabilities/
+   `- src/
+      |- main.rs
+      `- lib.rs
 ```
 
 ## 6. Contract generation strategy
@@ -2067,8 +2171,8 @@ Recommended flow:
 1. define contracts in Rust
 2. derive JSON Schema
 3. copy or generate schema files into `contracts/generated/`
-4. consume schemas from TypeScript using AJV
-5. add parity tests to ensure plugin expectations match Rust output
+4. consume schemas from TypeScript using AJV or equivalent runtime validation
+5. add parity tests to ensure desktop expectations match Rust output
 
 ## 7. Style guide
 
@@ -2080,15 +2184,15 @@ Recommended flow:
 - document public APIs
 
 ### TypeScript
-- controllers should be framework-light and testable
-- host APIs must stay behind adapters
-- UI should consume viewmodels, not raw domain mutation logic
-- avoid plugin-wide mutable globals beyond a single state root
+- workflow modules should be framework-light and testable
+- native and Tauri APIs must stay behind adapters or narrow command wrappers
+- UI should consume projections and typed workflow state, not raw domain mutation logic
+- avoid desktop-wide mutable globals beyond a single state root
 
 ## 8. Commit and branch strategy
 
 Recommended:
-- one work package per branch/worktree
+- one work package per branch or worktree
 - keep changesets cohesive
 - merge contracts before dependent work
 - do not stack unrelated risky changes in one agent task
@@ -2135,18 +2239,17 @@ Suggested intent:
 3. implement minimal change
 4. run targeted test
 5. run broader suite
-6. update docs/examples if contract changed
+6. update docs or examples if contract changed
 
 ## 12. First release artifact set
 
 The first release should include:
-- plugin bundle
+- desktop bundle or runnable desktop build instructions
 - CLI binary or instructions
 - example style pack
 - example fighter project
 - example export bundle
 - release notes summarizing gaps
-
 
 ---
 
@@ -2177,10 +2280,10 @@ Do not rely on GUI automation for the first overnight run.
 
 ## 3. Recommended task split
 
-### Task A — trunk/bootstrap
+### Task A - launch and bootstrap
 Prompt:
-- `prompts/00-MASTER-ORCHESTRATOR.md`
-- then `prompts/01-BOOTSTRAP.md`
+- `prompts/00-LAUNCH-STANDALONE.md`
+- `prompts/01-BOOTSTRAP-AND-CONTRACTS.md`
 
 Outputs:
 - monorepo skeleton
@@ -2188,10 +2291,11 @@ Outputs:
 - root scripts
 - docs wired in
 
-### Task B — contracts/core foundation
+### Task B - contracts, domain, validator, and CLI
 Prompt:
-- `prompts/02-CONTRACTS-SCHEMAS.md`
-- `prompts/03-RUST-CORE-VALIDATOR.md`
+- `prompts/02-FIXTURES-AND-DOMAIN.md`
+- `prompts/03-VALIDATOR-AND-EXPORT.md`
+- `prompts/04-CLI.md`
 
 Outputs:
 - contracts
@@ -2200,35 +2304,22 @@ Outputs:
 - CLI
 - first export path
 
-### Task C — plugin shell
+### Task C - desktop shell workflows
 Prompt:
-- `prompts/04-PLUGIN-SHELL.md`
-- `prompts/05-ASSEMBLY-DEFORMATION.md`
+- `prompts/05-PLUGIN-SHELL.md` (legacy filename; desktop shell scope)
+- `prompts/06-PLUGIN-WORKFLOWS.md` (legacy filename; desktop workflow scope)
 
 Outputs:
-- buildable plugin shell
-- controller tests
-- assembly and deformation workflows
+- buildable desktop shell
+- controller and workflow tests
+- project, assembly, deformation, material, and rig workflows
 
-### Task D — surface/rig/export hardening
+### Task D - acceptance and handoff
 Prompt:
-- `prompts/06-PAINTING.md`
-- `prompts/07-RIGGING-EXPORT.md`
+- `prompts/07-ACCEPTANCE-AND-CI.md`
+- `prompts/08-GAP-REPORT-AND-HANDOFF.md`
 
 Outputs:
-- material zone workflow
-- paint layer model
-- rig metadata path
-- export integration
-
-### Task E — safety and finish
-Prompt:
-- `prompts/08-LLM-COMMANDS.md`
-- `prompts/09-HARDENING-RELEASE.md`
-- `prompts/10-MERGE-REVIEW.md`
-
-Outputs:
-- command DSL
 - acceptance harness
 - release docs
 - gap report
@@ -2239,9 +2330,9 @@ Outputs:
 2. contracts
 3. core/domain/validator
 4. export + CLI
-5. plugin shell
-6. material/rig/export integration
-7. hardening/review
+5. desktop shell
+6. acceptance and handoff
+7. review
 
 ## 5. Ground rules for every task
 
@@ -2254,14 +2345,14 @@ Outputs:
 
 ## 6. If a task goes red
 
-Use `prompts/11-RECOVERY-LOOP.md`.
-
 Focus order:
 1. restore build
 2. restore contracts
 3. restore validate/export
-4. restore plugin tests
+4. restore desktop tests
 5. restore docs/examples parity
+
+Then restart from `prompts/00-LAUNCH-STANDALONE.md` with the reduced gap clearly documented.
 
 ## 7. Expected overnight deliverable
 
@@ -2271,7 +2362,7 @@ By morning, you want:
 - example project fixtures
 - working validator CLI
 - working GLB export path
-- buildable plugin shell
+- buildable desktop shell
 - clear gap report for anything not fully polished
 
 ## 8. Morning review checklist

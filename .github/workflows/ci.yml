@@ -16,9 +16,13 @@ jobs:
       - name: Format check
         run: cargo fmt --all -- --check
       - name: Clippy
-        run: cargo clippy --workspace --all-targets -- -D warnings
+        run: cargo clippy --workspace --exclude polybash-desktop --all-targets -- -D warnings
       - name: Cargo test
-        run: cargo test --workspace
+        run: cargo test --workspace --exclude polybash-desktop
+      - name: Validate canonical example
+        run: cargo run -p polybash-cli -- validate --project fixtures/projects/valid/fighter_basic.zxmodel.json --stylepack fixtures/stylepacks/valid/zx_fighter_v1.stylepack.json
+      - name: Export canonical example
+        run: cargo run -p polybash-cli -- export --project fixtures/projects/valid/fighter_basic.zxmodel.json --stylepack fixtures/stylepacks/valid/zx_fighter_v1.stylepack.json --out out/example
 
   plugin:
     runs-on: ubuntu-latest
@@ -41,3 +45,33 @@ jobs:
         run: pnpm typecheck
       - name: Test
         run: pnpm test
+      - name: Build
+        run: pnpm build
+
+  desktop:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Setup Rust
+        uses: dtolnay/rust-toolchain@stable
+      - name: Rust cache
+        uses: Swatinem/rust-cache@v2
+      - uses: pnpm/action-setup@v4
+        with:
+          version: 10
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: pnpm
+      - name: Install workspace deps
+        run: pnpm install --no-frozen-lockfile
+      - name: Remove legacy desktop dist if present
+        run: rm -rf dist-desktop
+      - name: Desktop typecheck
+        run: pnpm --dir desktop typecheck
+      - name: Desktop frontend tests
+        run: pnpm --dir desktop test
+      - name: Desktop frontend build
+        run: pnpm --dir desktop build
+      - name: Desktop backend tests
+        run: cargo test --manifest-path desktop/src-tauri/Cargo.toml

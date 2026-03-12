@@ -60,7 +60,7 @@ Purpose:
 
 Examples:
 - project load → validate → export
-- plugin controller dispatch → WASM bridge → validation result
+- desktop controller dispatch → Tauri bridge → validation result
 - CLI `validate` and `export` commands
 
 ## 3.5 Golden / snapshot tests
@@ -87,10 +87,10 @@ Examples:
 
 ## 3.7 Manual smoke tests
 Purpose:
-- cover a thin layer of host integration not suitable for the first overnight pass
+- cover a thin layer of desktop-shell integration not suitable for the first overnight pass
 
 Examples:
-- load plugin in Blockbench
+- launch the desktop application
 - open example project
 - run export button once
 
@@ -107,7 +107,7 @@ Manual smoke tests must be minimal and clearly isolated from automated correctne
 - `polybash-llm`: 85% line coverage
 - `polybash-cli`: critical command paths covered by integration tests
 
-### TypeScript plugin minimums
+### TypeScript desktop minimums
 - controllers/state/bridge: 80% line coverage
 - adapters: test at least success/failure seams
 - UI rendering: smoke-level coverage acceptable if controller logic is fully tested
@@ -218,7 +218,7 @@ The overnight target passes release gate only if:
 2. the fighter example exports to GLB
 3. validator report is generated
 4. project round-trip passes
-5. the plugin bundle builds
+5. the desktop shell builds
 6. CI is green
 7. documented gaps do not include any critical path blocker
 
@@ -237,5 +237,5 @@ The overnight target passes release gate only if:
 Only after M1 is green:
 - fuzzing on import/deserialization
 - mutation testing for validator logic
-- heavier host integration smoke automation
+- heavier desktop integration smoke automation
 - performance benchmarks on representative assets
