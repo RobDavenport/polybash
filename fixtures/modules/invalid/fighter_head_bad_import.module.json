@@ -1,0 +1,19 @@
+{
+  "id": "fighter_head_bad_import_a",
+  "assetType": "character",
+  "sourceAsset": "fixtures/modules/invalid/fighter_head_bad_import_a.fbx",
+  "connectors": [
+    {
+      "id": "neck_socket",
+      "kind": "unknown_socket"
+    }
+  ],
+  "regions": [
+    {
+      "id": "visor_width",
+      "min": -0.08,
+      "max": 0.12
+    }
+  ],
+  "materialZones": []
+}

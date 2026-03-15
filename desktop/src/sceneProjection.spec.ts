@@ -98,6 +98,32 @@ describe("buildProxyScene", () => {
     expect(unselected?.rotationMode).toBeUndefined();
   });
 
+  it("projects visible orientation, transform, and connector affordances for the selected node", () => {
+    const scene = buildProxyScene(documentFixture, "arm_r_01");
+    const selected = scene.nodes.find((node) => node.instanceId === "arm_r_01");
+
+    expect(scene.orientationWidget.axes).toEqual([
+      { axis: "x", colorHex: "#d84f37", label: "X" },
+      { axis: "y", colorHex: "#2f8f63", label: "Y" },
+      { axis: "z", colorHex: "#2a6db2", label: "Z" }
+    ]);
+    expect(scene.orientationWidget.anchor[1]).toBeGreaterThan(scene.bounds.min[1]);
+    expect(selected?.transformGuides.map((guide) => guide.kind)).toEqual([
+      "translate",
+      "translate",
+      "scale",
+      "rotate"
+    ]);
+    expect(selected?.connectorMarkers.map((marker) => marker.id)).toEqual([
+      "arm_plug",
+      "hand_socket_r"
+    ]);
+    expect(selected?.connectorMarkers.find((marker) => marker.id === "hand_socket_r")?.state).toBe(
+      "attached"
+    );
+    expect(selected?.snapGuides[0]?.label).toBe("hand_socket_r -> weapon_01.grip");
+  });
+
   it("builds a typed set_transform command for viewport translation commits", () => {
     expect(buildViewportTranslateCommit("weapon_01", [0.95, 1, 0], [0.125, -0.2])).toEqual({
       instanceId: "weapon_01",

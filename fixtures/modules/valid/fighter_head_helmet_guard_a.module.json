@@ -1,0 +1,23 @@
+{
+  "id": "fighter_head_helmet_guard_a",
+  "assetType": "character",
+  "sourceAsset": "fixtures/modules/valid/fighter_head_helmet_guard_a.glb",
+  "connectors": [
+    {
+      "id": "neck_socket",
+      "kind": "neck_socket"
+    }
+  ],
+  "regions": [
+    {
+      "id": "visor_width",
+      "min": -0.08,
+      "max": 0.12
+    }
+  ],
+  "materialZones": [
+    "metal",
+    "trim",
+    "accent"
+  ]
+}

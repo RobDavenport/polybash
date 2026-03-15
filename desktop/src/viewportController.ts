@@ -4,7 +4,8 @@ import {
   buildViewportRotateCommit,
   buildViewportScaleCommit,
   buildViewportTranslateCommit,
-  type ProxyScene
+  type ProxyScene,
+  type ProxyTransformGuide
 } from "./sceneProjection";
 import type {
   ViewportRotateCommit,
@@ -35,6 +36,54 @@ type DragState = {
   nextRotateCommit?: ViewportRotateCommit;
   moved: boolean;
 };
+
+type PointerIntersection = {
+  object: {
+    userData?: Record<string, unknown>;
+  };
+};
+
+export type ViewportPointerTarget =
+  | {
+      kind: "guide";
+      mode: DragState["mode"];
+      instanceId: string;
+    }
+  | {
+      kind: "module";
+      instanceId: string;
+    };
+
+export function resolveViewportPointerTarget(
+  guideHit?: PointerIntersection,
+  meshHit?: PointerIntersection
+): ViewportPointerTarget | undefined {
+  const guideData = guideHit?.object.userData;
+  const guideInstanceId = guideData?.instanceId;
+  const guideMode = guideData?.mode;
+
+  if (
+    guideData?.hitTarget === "transform-guide" &&
+    typeof guideInstanceId === "string" &&
+    isDragMode(guideMode)
+  ) {
+    return {
+      kind: "guide",
+      mode: guideMode,
+      instanceId: guideInstanceId
+    };
+  }
+
+  const instanceId = meshHit?.object.userData?.instanceId;
+  if (typeof instanceId === "string") {
+    return {
+      kind: "module",
+      instanceId
+    };
+  }
+
+  return undefined;
+}
 
 export function mountViewport(
   container: HTMLElement,
@@ -80,7 +129,12 @@ export function mountViewport(
   );
 
   const proxyMeshes: THREE.Mesh[] = [];
+  const proxyMeshesByInstanceId = new Map<string, THREE.Mesh>();
   const outlinesByInstanceId = new Map<string, THREE.LineSegments>();
+  const guideTargets: THREE.Object3D[] = [];
+  const guideGroup = new THREE.Group();
+  scene.add(guideGroup);
+
   for (const node of proxyScene.nodes) {
     const geometry = new THREE.BoxGeometry(node.size[0], node.size[1], node.size[2]);
     const material = new THREE.MeshStandardMaterial({
@@ -104,6 +158,7 @@ export function mountViewport(
     mesh.userData.authoredScale = node.authoredScale;
     scene.add(mesh);
     proxyMeshes.push(mesh);
+    proxyMeshesByInstanceId.set(node.instanceId, mesh);
 
     if (node.selected) {
       const edges = new THREE.LineSegments(
@@ -114,10 +169,50 @@ export function mountViewport(
       edges.rotation.copy(mesh.rotation);
       scene.add(edges);
       outlinesByInstanceId.set(node.instanceId, edges);
+
+      for (const transformGuide of node.transformGuides) {
+        renderTransformGuide(guideGroup, transformGuide, node.instanceId, guideTargets);
+      }
+
+      for (const connectorMarker of node.connectorMarkers) {
+        const markerGeometry = new THREE.SphereGeometry(0.06, 18, 18);
+        const markerMaterial = new THREE.MeshStandardMaterial({
+          color: new THREE.Color(resolveConnectorColor(connectorMarker.state)),
+          emissive: new THREE.Color(resolveConnectorColor(connectorMarker.state)),
+          emissiveIntensity: connectorMarker.state === "attached" ? 0.2 : 0.08,
+          roughness: 0.35,
+          metalness: 0.15
+        });
+        const marker = new THREE.Mesh(markerGeometry, markerMaterial);
+        marker.position.set(
+          connectorMarker.position[0],
+          connectorMarker.position[1],
+          connectorMarker.position[2]
+        );
+        guideGroup.add(marker);
+      }
+
+      for (const snapGuide of node.snapGuides) {
+        const geometry = new THREE.BufferGeometry().setFromPoints([
+          new THREE.Vector3(snapGuide.from[0], snapGuide.from[1], snapGuide.from[2]),
+          new THREE.Vector3(snapGuide.to[0], snapGuide.to[1], snapGuide.to[2])
+        ]);
+        const material = new THREE.LineDashedMaterial({
+          color: "#ef7d32",
+          dashSize: 0.12,
+          gapSize: 0.08
+        });
+        const line = new THREE.Line(geometry, material);
+        line.computeLineDistances();
+        guideGroup.add(line);
+      }
     }
   }
 
+  renderOrientationWidget(guideGroup, proxyScene);
+
   const raycaster = new THREE.Raycaster();
+  raycaster.params.Line.threshold = 0.15;
   const pointer = new THREE.Vector2();
   let dragState: DragState | undefined;
 
@@ -150,6 +245,78 @@ export function mountViewport(
     );
   }
 
+  function beginRotateDrag(instanceId: string, mesh: THREE.Mesh, pointerX: number): boolean {
+    if (mesh.userData.rotationMode !== "z") {
+      return false;
+    }
+
+    const authoredRotation = mesh.userData.authoredRotation as [number, number, number] | undefined;
+    if (!authoredRotation) {
+      return false;
+    }
+
+    dragState = {
+      mode: "rotate",
+      instanceId,
+      mesh,
+      startPointerX: pointerX,
+      startRotation: authoredRotation,
+      moved: false
+    };
+    beginDrag("rotate");
+    return true;
+  }
+
+  function beginScaleDrag(instanceId: string, mesh: THREE.Mesh, pointerY: number): boolean {
+    if (mesh.userData.scaleMode !== "uniform") {
+      return false;
+    }
+
+    const authoredScale = mesh.userData.authoredScale as [number, number, number] | undefined;
+    if (!authoredScale) {
+      return false;
+    }
+
+    dragState = {
+      mode: "scale",
+      instanceId,
+      mesh,
+      startPointerY: pointerY,
+      startScale: authoredScale,
+      moved: false
+    };
+    beginDrag("scale");
+    return true;
+  }
+
+  function beginTranslateDrag(
+    instanceId: string,
+    mesh: THREE.Mesh,
+    event: PointerEvent
+  ): boolean {
+    if (mesh.userData.translationMode !== "xy") {
+      return false;
+    }
+
+    const plane = new THREE.Plane(new THREE.Vector3(0, 0, 1), -mesh.position.z);
+    const startIntersection = intersectAuthoringPlane(event, plane);
+    if (!startIntersection) {
+      return false;
+    }
+
+    dragState = {
+      mode: "translate",
+      instanceId,
+      mesh,
+      plane,
+      startIntersection: startIntersection.clone(),
+      startPosition: [mesh.position.x, mesh.position.y, mesh.position.z],
+      moved: false
+    };
+    beginDrag("translate");
+    return true;
+  }
+
   function handlePointerDown(event: PointerEvent): void {
     if (event.button !== 0) {
       return;
@@ -157,60 +324,27 @@ export function mountViewport(
 
     updatePointer(event);
     raycaster.setFromCamera(pointer, camera);
-    const hit = raycaster.intersectObjects(proxyMeshes, false)[0];
-    const hitMesh = hit?.object as THREE.Mesh | undefined;
-    const instanceId = hit?.object.userData.instanceId;
-    if (typeof instanceId === "string") {
-      if (event.altKey && hitMesh?.userData.rotationMode === "z") {
-        const authoredRotation = hitMesh.userData.authoredRotation as [number, number, number];
+    const guideHit = raycaster.intersectObjects(guideTargets, false)[0] as PointerIntersection | undefined;
+    const meshHit = raycaster.intersectObjects(proxyMeshes, false)[0] as PointerIntersection | undefined;
+    const pointerTarget = resolveViewportPointerTarget(guideHit, meshHit);
+    const instanceId = pointerTarget?.instanceId;
+    const hitMesh = instanceId ? proxyMeshesByInstanceId.get(instanceId) : undefined;
 
-        dragState = {
-          mode: "rotate",
-          instanceId,
-          mesh: hitMesh,
-          startPointerX: event.clientX,
-          startRotation: authoredRotation,
-          moved: false
-        };
-        beginDrag("rotate");
+    if (pointerTarget?.kind === "guide" && instanceId && hitMesh) {
+      const beganDrag =
+        (pointerTarget.mode === "rotate" && beginRotateDrag(instanceId, hitMesh, event.clientX)) ||
+        (pointerTarget.mode === "scale" && beginScaleDrag(instanceId, hitMesh, event.clientY)) ||
+        (pointerTarget.mode === "translate" && beginTranslateDrag(instanceId, hitMesh, event));
+      if (beganDrag) {
+        event.preventDefault();
+      }
+      return;
+    }
+
+    if (pointerTarget?.kind === "module" && instanceId && hitMesh) {
+      if (beginTranslateDrag(instanceId, hitMesh, event)) {
         event.preventDefault();
         return;
-      }
-
-      if (event.shiftKey && hitMesh?.userData.scaleMode === "uniform") {
-        const authoredScale = hitMesh.userData.authoredScale as [number, number, number];
-
-        dragState = {
-          mode: "scale",
-          instanceId,
-          mesh: hitMesh,
-          startPointerY: event.clientY,
-          startScale: authoredScale,
-          moved: false
-        };
-        beginDrag("scale");
-        event.preventDefault();
-        return;
-      }
-
-      if (hitMesh?.userData.translationMode === "xy") {
-        const plane = new THREE.Plane(new THREE.Vector3(0, 0, 1), -hitMesh.position.z);
-        const startIntersection = intersectAuthoringPlane(event, plane);
-
-        if (startIntersection) {
-          dragState = {
-            mode: "translate",
-            instanceId,
-            mesh: hitMesh,
-            plane,
-            startIntersection: startIntersection.clone(),
-            startPosition: [hitMesh.position.x, hitMesh.position.y, hitMesh.position.z],
-            moved: false
-          };
-          beginDrag("translate");
-          event.preventDefault();
-          return;
-        }
       }
 
       options.onSelect(instanceId);
@@ -380,7 +514,121 @@ export function mountViewport(
         material.dispose();
       }
     }
+    disposeGroup(guideGroup);
     renderer.dispose();
     container.replaceChildren();
   };
+}
+
+function renderOrientationWidget(group: THREE.Group, proxyScene: ProxyScene): void {
+  const origin = new THREE.Vector3(
+    proxyScene.orientationWidget.anchor[0],
+    proxyScene.orientationWidget.anchor[1],
+    proxyScene.orientationWidget.anchor[2]
+  );
+
+  for (const axis of proxyScene.orientationWidget.axes) {
+    const direction =
+      axis.axis === "x"
+        ? new THREE.Vector3(0.38, 0, 0)
+        : axis.axis === "y"
+          ? new THREE.Vector3(0, 0.38, 0)
+          : new THREE.Vector3(0, 0, 0.38);
+    const geometry = new THREE.BufferGeometry().setFromPoints([origin, origin.clone().add(direction)]);
+    const material = new THREE.LineBasicMaterial({ color: axis.colorHex });
+    const line = new THREE.Line(geometry, material);
+    group.add(line);
+  }
+}
+
+function renderTransformGuide(
+  group: THREE.Group,
+  guide: ProxyTransformGuide,
+  instanceId: string,
+  guideTargets: THREE.Object3D[]
+): void {
+  if (guide.kind === "rotate") {
+    const geometry = new THREE.TorusGeometry(guide.radius, 0.01, 8, 40);
+    const material = new THREE.MeshBasicMaterial({ color: guide.colorHex });
+    const ring = new THREE.Mesh(geometry, material);
+    ring.position.set(guide.center[0], guide.center[1], guide.center[2]);
+    setGuideUserData(ring, instanceId, "rotate");
+    group.add(ring);
+    guideTargets.push(ring);
+    return;
+  }
+
+  const geometry = new THREE.BufferGeometry().setFromPoints([
+    new THREE.Vector3(guide.start[0], guide.start[1], guide.start[2]),
+    new THREE.Vector3(guide.end[0], guide.end[1], guide.end[2])
+  ]);
+  const material = new THREE.LineBasicMaterial({ color: guide.colorHex });
+  const line = new THREE.Line(geometry, material);
+  setGuideUserData(line, instanceId, guide.kind);
+  group.add(line);
+  guideTargets.push(line);
+
+  if (guide.kind === "translate") {
+    const handle = new THREE.Mesh(
+      new THREE.SphereGeometry(0.06, 16, 16),
+      new THREE.MeshStandardMaterial({ color: guide.colorHex, roughness: 0.25, metalness: 0.08 })
+    );
+    handle.position.set(guide.end[0], guide.end[1], guide.end[2]);
+    setGuideUserData(handle, instanceId, "translate");
+    group.add(handle);
+    guideTargets.push(handle);
+    return;
+  }
+
+  if (guide.kind === "scale") {
+    const handle = new THREE.Mesh(
+      new THREE.BoxGeometry(0.08, 0.08, 0.08),
+      new THREE.MeshStandardMaterial({ color: guide.colorHex, roughness: 0.25, metalness: 0.1 })
+    );
+    handle.position.set(guide.end[0], guide.end[1], guide.end[2]);
+    setGuideUserData(handle, instanceId, "scale");
+    group.add(handle);
+    guideTargets.push(handle);
+  }
+}
+
+function setGuideUserData(
+  object: THREE.Object3D,
+  instanceId: string,
+  mode: DragState["mode"]
+): void {
+  object.userData.hitTarget = "transform-guide";
+  object.userData.instanceId = instanceId;
+  object.userData.mode = mode;
+}
+
+function isDragMode(value: unknown): value is DragState["mode"] {
+  return value === "translate" || value === "scale" || value === "rotate";
+}
+
+function resolveConnectorColor(state: "attached" | "available" | "snap"): string {
+  switch (state) {
+    case "attached":
+      return "#17624a";
+    case "snap":
+      return "#ef7d32";
+    case "available":
+      return "#7c6f5f";
+  }
+}
+
+function disposeGroup(group: THREE.Group): void {
+  group.traverse((object) => {
+    const geometry = (object as THREE.Mesh).geometry;
+    if (geometry instanceof THREE.BufferGeometry) {
+      geometry.dispose();
+    }
+
+    const material = (object as THREE.Mesh).material;
+    if (Array.isArray(material)) {
+      material.forEach((entry) => entry.dispose());
+    } else if (material instanceof THREE.Material) {
+      material.dispose();
+    }
+  });
 }

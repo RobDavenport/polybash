@@ -6,6 +6,8 @@ fn main() {
             polybash_desktop::commands::create_fighter_template_command,
             polybash_desktop::commands::load_document_command,
             polybash_desktop::commands::add_module_instance_command,
+            polybash_desktop::commands::add_module_and_snap_command,
+            polybash_desktop::commands::import_module_contract_command,
             polybash_desktop::commands::remove_module_instance_command,
             polybash_desktop::commands::mirror_module_instance_command,
             polybash_desktop::commands::apply_edit_command_command,
@@ -17,6 +19,7 @@ fn main() {
             polybash_desktop::commands::add_module_decal_layer_command,
             polybash_desktop::commands::remove_module_decal_layer_command,
             polybash_desktop::commands::save_project_command,
+            polybash_desktop::commands::save_style_pack_command,
             polybash_desktop::commands::validate_document_command,
             polybash_desktop::commands::export_document_command
         ])

@@ -16,6 +16,18 @@ export function ensureProjectSavePath(path: string): string {
   return `${path}.zxmodel.json`;
 }
 
+export function ensureStylePackSavePath(path: string): string {
+  if (path.endsWith(".stylepack.json")) {
+    return path;
+  }
+
+  if (path.endsWith(".json")) {
+    return `${path.slice(0, -".json".length)}.stylepack.json`;
+  }
+
+  return `${path}.stylepack.json`;
+}
+
 export function suggestProjectSavePath(document?: DesktopDocument): string {
   if (document?.paths.savePath) {
     return document.paths.savePath;
@@ -26,4 +38,18 @@ export function suggestProjectSavePath(document?: DesktopDocument): string {
   }
 
   return "out/desktop/project.zxmodel.json";
+}
+
+export function suggestStylePackSavePath(document?: DesktopDocument): string {
+  if (document?.paths.stylePackPath) {
+    const basePath = ensureStylePackSavePath(document.paths.stylePackPath);
+    if (basePath.endsWith("_authored.stylepack.json")) {
+      return basePath;
+    }
+
+    return `${basePath.slice(0, -".stylepack.json".length)}_authored.stylepack.json`;
+  }
+
+  const stylePackId = document?.stylePack.id ?? "style_pack";
+  return `out/desktop/${stylePackId}_authored.stylepack.json`;
 }

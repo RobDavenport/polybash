@@ -1,0 +1,12 @@
+{
+  "version": 1,
+  "id": "fighter_head_bad_import",
+  "assetType": "character",
+  "sourceAsset": {
+    "path": "../source/weapon_hammer_basic.glb",
+    "format": "fbx"
+  },
+  "connectors": [],
+  "regions": [],
+  "materialZones": ["primary"]
+}

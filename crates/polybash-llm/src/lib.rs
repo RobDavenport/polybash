@@ -34,6 +34,18 @@ pub fn summarize_commands(commands: &[EditCommand]) -> Vec<String> {
             EditCommand::AssignRigTemplate { template_id } => {
                 format!("assign_rig_template {template_id}")
             }
+            EditCommand::SetConnectorAttachment {
+                instance_id,
+                local_connector,
+                target_instance_id,
+                target_connector,
+            } => format!(
+                "set_connector_attachment {instance_id} {local_connector} {target_instance_id} {target_connector}"
+            ),
+            EditCommand::ClearConnectorAttachment {
+                instance_id,
+                local_connector,
+            } => format!("clear_connector_attachment {instance_id} {local_connector}"),
             EditCommand::AttachSocket { name, bone } => format!("attach_socket {name} {bone}"),
         })
         .collect()
@@ -60,6 +72,19 @@ pub fn summarize_command_preview_targets(commands: &[EditCommand]) -> Vec<String
             EditCommand::AssignRigTemplate { .. } => {
                 "preview project.rig project.rig.template_id".to_string()
             }
+            EditCommand::SetConnectorAttachment {
+                instance_id,
+                local_connector,
+                ..
+            } => format!(
+                "preview {instance_id} modules.{instance_id}.connector_attachments.{local_connector}"
+            ),
+            EditCommand::ClearConnectorAttachment {
+                instance_id,
+                local_connector,
+            } => format!(
+                "preview {instance_id} modules.{instance_id}.connector_attachments.{local_connector}"
+            ),
             EditCommand::AttachSocket { name, .. } => {
                 format!("preview {name} project.rig.sockets.{name}")
             }

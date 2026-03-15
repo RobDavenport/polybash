@@ -55,7 +55,7 @@ M1 means:
 
 - `AGENTS.md` with repo rules and TDD expectations
 - `MASTER_SPEC.md` as single-file source of truth
-- `docs/` for PRD, architecture, WBS, quality gates, acceptance, and risk control
+- `docs/` for PRD, architecture, WBS, quality gates, acceptance, risk control, and the current Blender handoff contract
 - `codex/` for orchestration, prompts, taskboard, and runbook
 - `crates/` Rust workspace scaffold
 - `desktop/` standalone desktop shell and Tauri backend
@@ -68,6 +68,9 @@ M1 means:
 - `justfile` and root package scripts for consistent task entry points
 
 ## Read this first
+
+For the current reusable-module import boundary, see docs/09-BLENDER-HANDOFF-CONTRACT.md.
+
 
 Codex should read files in this order:
 
@@ -168,8 +171,8 @@ Once the desktop window opens:
 
 1. Click `Load Canonical Fighter` to load the seeded fighter fixture, or `New Fighter` to generate a fresh template from the current style pack.
 2. Click a module chip in the viewport strip, such as `torso_01` or `weapon_01`, to inspect it.
-3. Drag in the viewport to move the selected module. Hold `Shift` while dragging to scale uniformly, or hold `Alt` while dragging to rotate around Z.
-4. Use the inspector to change transforms, material assignments, region sliders, rig metadata, connector attachments, snap targets, paint fills, decals, and mirror/remove actions.
+3. Drag the selected module itself to move it on the authoring plane, or grab the visible red, amber, and blue guides to translate, scale, or rotate it without hidden modifier keys. The viewport now also shows a world-orientation widget, transform guides, connector markers, and snap-guide lines for the selected module.
+4. Use the module browser to inspect a style-pack part before placement, then use `Edit Metadata` in the preview card to draft reusable connector, region, and material-zone metadata for that module. Use `Import Module Contract` to bring in a Blender handoff file (`.moduleimport.json` or `.module.json`), inspect its source-asset path in the browser preview, isolate style-pack, imported, session-authored, or currently in-use reusable modules with the browser filter chips, search the reusable library by module id, source, connector or material metadata, source-asset path, or usage, inspect live suggested placement targets in the preview before adding a module, use the explicit `Add Without Snapping` fallback when you want a manual placement instead, use the recommended `Add and Snap` CTA for the top-ranked target, read the alternative-target summary when more than one live option exists, or use any grouped alternative `Add and Snap` action to place against a suggested live target in one step, duplicate a reusable module into a deterministic or custom-named authored copy, rename or delete authored copies in place, and use `Save Style Pack As` when you want to persist imported or authored reusable content. Use the inspector to change transforms, material assignments, region sliders, rig metadata, connector attachments, snap targets, paint fills, decals, and mirror/remove actions, and use the sidebar history panel to undo or redo recent edits.
 5. Use `Validate` to run the Rust validator and `Export Preview` to confirm the GLB export path.
 
 The fastest way to understand the current shell is to load the canonical fighter, select `weapon_01`, try a snap action, change a material, preview/apply that material change, then run validation and export.
@@ -179,28 +182,32 @@ The fastest way to understand the current shell is to load the canonical fighter
 - native open/save dialogs
 - canonical load plus explicit path-based load
 - live proxy viewport rendering with module selection
-- pointer-driven viewport translate
-- `Shift` + drag uniform viewport scaling with safe minimum clamping
-- `Alt` + drag viewport rotation around Z
-- style-pack-backed module add/remove
+- pointer-driven viewport translate plus guide-driven translate, uniform scale, and rotate interactions for the selected module
+- visible world-orientation widget plus translate, scale, and rotate guide overlays for the selected module
+- visible connector markers and snap-guide lines for the selected module in the viewport
+- selection-first module browser with dedicated preview, connector metadata, scene-aware suggested placement targets, an explicit `Add Without Snapping` manual fallback, a recommended add-and-snap CTA plus an alternative-target summary, connector-grouped alternative add-and-snap actions for the remaining suggested target list, and explicit selected-instance feedback in the preview when that reusable module is selected in the scene, including repeated-placement counts when more than one instance is placed, region/material summaries, source-aware plus in-use filters, reusable-library metadata search, placed-instance preview badges, imported source-asset metadata, explicit add-from-preview placement, deterministic-or-named duplicate-as-authored, rename-authored-copy, and delete-authored-copy browser actions, and a surfaced reusable-module metadata draft editor
 - command-backed transform edits from the inspector
-- bounded history helpers with deep-cloned past/future snapshots and tested redo semantics; the current shell still exposes single-step undo for the latest successful document-changing action
+- visible undo, redo, and recent action history on top of the bounded history model
 - mirrored module creation from the inspector with symmetry-aware counterpart naming
 - connector attach and detach from the inspector
-- backend snap commands through the Tauri bridge plus a minimal inspector snap action with deterministic compatible-target suggestions
+- canonical imported-module contract support through the desktop bridge for `.moduleimport.json` and descriptor-style import fixtures
 - command-backed region and material edits
 - minimal desktop-native fill and decal authoring from the inspector through Rust-backed Tauri commands
-- a narrow material-assignment preview/apply/cancel UI in the inspector backed by the existing preview bridge
+- a narrow preview/apply/cancel UI in the inspector backed by the existing preview bridge for material, transform, region, rig-template, connector, and socket edits
+- Blender handoff import through explicit `.moduleimport.json` or `.module.json` contracts backed by validated `.glb` source-asset paths
+- style-pack save-as and reload support for imported or authored reusable modules
 - rig template selection and socket metadata edits
 - deterministic preview/diff metadata for structured edit commands through the Tauri bridge, including the registered desktop preview invoke and current material-preview UI slice
 - Rust-owned validation and export preview through the Tauri bridge
 
 ## Current limitations
 
-- preview/apply UI is currently narrow and only covers material assignment
-- the visible desktop history UX still centers on undo; redo exists in helper/model coverage, not as a surfaced shell control
-- snap UX is still minimal and inspector-driven rather than a fuller viewport-first workflow
+- preview/apply UI is still narrow and currently covers material, transform, region, rig-template, connector, and socket edits rather than every structured edit family
+- transform interaction now uses visible selected-module guides instead of hidden modifier keys, but it is still a narrow single-selection gizmo slice rather than a fuller multi-axis tool palette
+- snap UX is still minimal and inspector-driven even though connector markers and snap-guide lines are now visible in the viewport
 - paint support is still limited to the walking-skeleton fill/decal path, not richer freehand tooling
+- Blender handoff import and style-pack save/reload now exist, and the current contract explicitly requires a referenced `.glb` plus declared material zones; PolyBash validates that metadata seam while deeper mesh, pivot, and UV inspection still remain outside the current pipeline
+- the browser preview is still deterministic metadata plus abstract silhouette bars, not richer rendered thumbnails yet
 - the legacy `plugin/` path still exists in the repo as historical scaffolding, but it is not the product path
 - manual desktop smoke and broader end-to-end workflow coverage are still thinner than the eventual product target
 
@@ -212,7 +219,7 @@ Clean-build note:
 
 Current desktop frontend evidence includes:
 - `corepack pnpm --dir desktop test`
-- 6 Vitest files / 32 tests, including `desktop/src/materialPreviewState.spec.ts`
+- 9 Vitest files / 83 tests, including `desktop/src/moduleDraft.spec.ts`, `desktop/src/moduleDraftForm.spec.ts`, and `desktop/src/viewportController.spec.ts`
 
 ## CLI commands
 
@@ -291,3 +298,12 @@ By the end of the first serious pass, you should have:
 - do not bypass the validator to claim export works
 - do not add opaque text-to-mesh behavior
 - do not expand to M2 before M1 is green
+
+
+
+
+
+
+
+
+

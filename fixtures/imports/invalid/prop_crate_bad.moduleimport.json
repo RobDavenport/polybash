@@ -1,0 +1,20 @@
+{
+  "version": 1,
+  "id": "prop_crate_bad_a",
+  "assetType": "prop_small",
+  "sourceAsset": {
+    "path": "../assets/prop_crate_round_a.glb",
+    "format": "fbx"
+  },
+  "connectors": [],
+  "regions": [
+    {
+      "id": "crate_width",
+      "min": -0.08,
+      "max": 0.12
+    }
+  ],
+  "materialZones": [
+    "body"
+  ]
+}

@@ -1,4 +1,4 @@
-use serde::{Deserialize, Serialize};
+use serde::{Deserialize, Deserializer, Serialize};
 use std::collections::BTreeMap;
 
 pub type Vec3 = [f32; 3];
@@ -166,10 +166,50 @@ pub struct RegionDescriptor {
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
+pub struct ImportedSourceAsset {
+    pub path: String,
+    pub format: String,
+}
+
+#[derive(Debug, Clone, Deserialize)]
+#[serde(untagged)]
+enum SourceAssetValue {
+    Path(String),
+    Asset(ImportedSourceAsset),
+}
+
+fn deserialize_source_asset<'de, D>(
+    deserializer: D,
+) -> Result<Option<ImportedSourceAsset>, D::Error>
+where
+    D: Deserializer<'de>,
+{
+    let value = Option::<SourceAssetValue>::deserialize(deserializer)?;
+    Ok(value.map(|value| match value {
+        SourceAssetValue::Path(path) => ImportedSourceAsset {
+            format: path
+                .split('.')
+                .next_back()
+                .unwrap_or("glb")
+                .to_ascii_lowercase(),
+            path,
+        },
+        SourceAssetValue::Asset(asset) => asset,
+    }))
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
 pub struct ModuleDescriptor {
     pub id: String,
     #[serde(rename = "assetType")]
     pub asset_type: AssetType,
+    #[serde(
+        rename = "sourceAsset",
+        default,
+        deserialize_with = "deserialize_source_asset",
+        skip_serializing_if = "Option::is_none"
+    )]
+    pub source_asset: Option<ImportedSourceAsset>,
     #[serde(default)]
     pub connectors: Vec<ConnectorDescriptor>,
     #[serde(default)]
@@ -188,6 +228,37 @@ impl ModuleDescriptor {
     }
 }
 
+#[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
+pub struct ImportedModuleContract {
+    pub version: u32,
+    pub id: String,
+    #[serde(rename = "assetType")]
+    pub asset_type: AssetType,
+    #[serde(rename = "sourceAsset")]
+    pub source_asset: ImportedSourceAsset,
+    #[serde(default)]
+    pub connectors: Vec<ConnectorDescriptor>,
+    #[serde(default)]
+    pub regions: Vec<RegionDescriptor>,
+    #[serde(rename = "materialZones", default)]
+    pub material_zones: Vec<String>,
+}
+
+impl ImportedModuleContract {
+    pub fn to_module_descriptor(&self, source_asset_path: String) -> ModuleDescriptor {
+        ModuleDescriptor {
+            id: self.id.clone(),
+            asset_type: self.asset_type.clone(),
+            source_asset: Some(ImportedSourceAsset {
+                path: source_asset_path,
+                format: self.source_asset.format.clone(),
+            }),
+            connectors: self.connectors.clone(),
+            regions: self.regions.clone(),
+            material_zones: self.material_zones.clone(),
+        }
+    }
+}
 #[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
 pub struct StylePack {
     pub version: u32,
@@ -333,6 +404,22 @@ pub enum EditCommand {
         #[serde(rename = "templateId")]
         template_id: String,
     },
+    SetConnectorAttachment {
+        #[serde(rename = "instanceId")]
+        instance_id: String,
+        #[serde(rename = "localConnector")]
+        local_connector: String,
+        #[serde(rename = "targetInstanceId")]
+        target_instance_id: String,
+        #[serde(rename = "targetConnector")]
+        target_connector: String,
+    },
+    ClearConnectorAttachment {
+        #[serde(rename = "instanceId")]
+        instance_id: String,
+        #[serde(rename = "localConnector")]
+        local_connector: String,
+    },
     AttachSocket {
         name: String,
         bone: String,
@@ -345,6 +432,20 @@ pub fn parse_project_str(input: &str) -> Result<Project, serde_json::Error> {
 
 pub fn parse_stylepack_str(input: &str) -> Result<StylePack, serde_json::Error> {
     serde_json::from_str(input)
+}
+
+pub fn parse_module_descriptor_str(input: &str) -> Result<ModuleDescriptor, serde_json::Error> {
+    serde_json::from_str(input)
+}
+
+pub fn parse_imported_module_contract_str(
+    input: &str,
+) -> Result<ImportedModuleContract, serde_json::Error> {
+    serde_json::from_str(input)
+}
+
+pub fn parse_module_import_str(input: &str) -> Result<ImportedModuleContract, serde_json::Error> {
+    parse_imported_module_contract_str(input)
 }
 
 pub fn parse_commands_str(input: &str) -> Result<Vec<EditCommand>, serde_json::Error> {

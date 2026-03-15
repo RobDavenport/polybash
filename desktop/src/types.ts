@@ -106,9 +106,15 @@ export type Palette = {
   materials: string[];
 };
 
+export type ModuleSourceAsset = {
+  path: string;
+  format: string;
+};
+
 export type ModuleDescriptor = {
   id: string;
   assetType: AssetType;
+  sourceAsset?: string | ModuleSourceAsset;
   connectors: Array<{ id: string; kind: string }>;
   regions: Array<{ id: string; min: number; max: number }>;
   materialZones: string[];
@@ -144,6 +150,7 @@ export type ValidationIssue = {
   path: string;
   summary: string;
   detail: string;
+  suggestedFix?: string;
 };
 
 export type ValidationReport = {
@@ -202,7 +209,10 @@ export type DesktopUndoSnapshot = {
   projectPath: string;
   stylePackPath: string;
   savePath: string;
+  moduleImportPath?: string;
   selectedModuleId?: string;
+  selectedLibraryModuleId?: string;
+  authoredModuleIds?: string[];
   document?: DesktopDocument;
   report?: ValidationReport;
   exportBundle?: DesktopExportBundle;
@@ -251,6 +261,20 @@ export type AssignRigTemplateCommand = {
   templateId: string;
 };
 
+export type SetConnectorAttachmentCommand = {
+  op: "set_connector_attachment";
+  instanceId: string;
+  localConnector: string;
+  targetInstanceId: string;
+  targetConnector: string;
+};
+
+export type ClearConnectorAttachmentCommand = {
+  op: "clear_connector_attachment";
+  instanceId: string;
+  localConnector: string;
+};
+
 export type AttachSocketCommand = {
   op: "attach_socket";
   name: string;
@@ -262,6 +286,8 @@ export type EditCommand =
   | SetRegionParamCommand
   | AssignMaterialZoneCommand
   | AssignRigTemplateCommand
+  | SetConnectorAttachmentCommand
+  | ClearConnectorAttachmentCommand
   | AttachSocketCommand;
 
 export type ViewportTranslationMode = "xy";

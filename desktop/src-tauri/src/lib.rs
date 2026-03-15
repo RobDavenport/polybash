@@ -1,8 +1,9 @@
 use base64::prelude::{Engine as _, BASE64_STANDARD};
 use polybash_contracts::{
-    parse_project_str, parse_stylepack_str, to_pretty_json, AssetType, DeclaredMetrics,
-    EditCommand, ModuleDescriptor, ModuleInstance, PaintLayer, Project, RigAssignment, StylePack,
-    Transform, ValidationReport,
+    parse_imported_module_contract_str, parse_module_descriptor_str, parse_project_str,
+    parse_stylepack_str, to_pretty_json, AssetType, DeclaredMetrics, EditCommand,
+    ImportedModuleContract, ModuleDescriptor, ModuleInstance, PaintLayer, Project, RigAssignment,
+    StylePack, Transform, ValidationReport,
 };
 use polybash_domain::{
     apply_command, preview_command_with_diff, CommandChange, CommandDiff, PreviewValue,
@@ -10,7 +11,7 @@ use polybash_domain::{
 use polybash_export::{export_project, ExportError};
 use polybash_validate::validate_project;
 use serde::{Deserialize, Serialize};
-use std::collections::BTreeMap;
+use std::collections::{BTreeMap, BTreeSet};
 use std::path::{Path, PathBuf};
 use thiserror::Error;
 
@@ -79,6 +80,12 @@ pub enum DesktopError {
     ParseProject(String),
     #[error("failed to parse style pack: {0}")]
     ParseStylePack(String),
+    #[error("failed to parse imported module contract: {0}")]
+    ParseImportedModule(String),
+    #[error("invalid imported module contract: {0}")]
+    InvalidImportedModule(String),
+    #[error("module descriptor already exists: {0}")]
+    DuplicateModule(String),
     #[error("failed to serialize project: {0}")]
     SerializeProject(String),
     #[error("module descriptor not found: {0}")]
@@ -176,6 +183,183 @@ fn load_style_pack(style_pack_path: &str) -> Result<StylePack, DesktopError> {
         .map_err(|error| DesktopError::ParseStylePack(error.to_string()))
 }
 
+fn load_imported_module_contract(
+    import_path: &str,
+) -> Result<ImportedModuleContract, DesktopError> {
+    let resolved_import_path = resolve_input_path(import_path);
+    parse_imported_module_contract_str(&read_text(&resolved_import_path)?)
+        .map_err(|error| DesktopError::ParseImportedModule(error.to_string()))
+}
+
+fn load_imported_module_descriptor(import_path: &str) -> Result<ModuleDescriptor, DesktopError> {
+    let resolved_import_path = resolve_input_path(import_path);
+    parse_module_descriptor_str(&read_text(&resolved_import_path)?)
+        .map_err(|error| DesktopError::ParseImportedModule(error.to_string()))
+}
+
+fn resolve_import_source_asset_path(import_path: &str, source_asset_path: &str) -> PathBuf {
+    let source_path = PathBuf::from(source_asset_path);
+    if source_path.is_absolute() {
+        return source_path;
+    }
+
+    let resolved_import_path = resolve_input_path(import_path);
+    resolved_import_path
+        .parent()
+        .map(|parent| parent.join(source_path.clone()))
+        .unwrap_or_else(|| repo_root().join(source_path))
+}
+
+fn to_repo_relative_display_path(path: &Path) -> String {
+    path.strip_prefix(repo_root())
+        .map(|relative| relative.to_string_lossy().replace('\\', "/"))
+        .unwrap_or_else(|_| path.display().to_string())
+}
+
+fn style_pack_knows_connector_kind(style_pack: &StylePack, kind: &str) -> bool {
+    style_pack.connector_taxonomy.contains_key(kind)
+        || style_pack
+            .connector_taxonomy
+            .values()
+            .any(|compatible| compatible.iter().any(|candidate| candidate == kind))
+}
+
+fn validate_imported_module_descriptor(
+    style_pack: &StylePack,
+    descriptor: &ModuleDescriptor,
+) -> Result<(), DesktopError> {
+    let source_asset = descriptor.source_asset.as_ref().ok_or_else(|| {
+        DesktopError::InvalidImportedModule(
+            "sourceAsset is required for imported reusable modules".to_string(),
+        )
+    })?;
+
+    if !source_asset.format.eq_ignore_ascii_case("glb") {
+        return Err(DesktopError::InvalidImportedModule(
+            "sourceAsset.format must be 'glb' for imported reusable modules".to_string(),
+        ));
+    }
+
+    let resolved_source_asset_path = resolve_input_path(&source_asset.path);
+    if !resolved_source_asset_path.is_file() {
+        return Err(DesktopError::InvalidImportedModule(format!(
+            "sourceAsset '{}' does not exist",
+            source_asset.path
+        )));
+    }
+
+    if style_pack.module(&descriptor.id).is_some() {
+        return Err(DesktopError::DuplicateModule(descriptor.id.clone()));
+    }
+
+    if !style_pack
+        .supported_asset_types
+        .contains(&descriptor.asset_type)
+    {
+        return Err(DesktopError::InvalidImportedModule(format!(
+            "assetType '{}' is not supported by style pack {}",
+            descriptor.asset_type.budget_key(),
+            style_pack.id
+        )));
+    }
+
+    if descriptor.material_zones.is_empty() {
+        return Err(DesktopError::InvalidImportedModule(
+            "at least one material zone is required".to_string(),
+        ));
+    }
+
+    if descriptor
+        .material_zones
+        .iter()
+        .any(|zone| zone.trim().is_empty())
+    {
+        return Err(DesktopError::InvalidImportedModule(
+            "material zones must be non-empty".to_string(),
+        ));
+    }
+
+    let material_zone_ids = descriptor
+        .material_zones
+        .iter()
+        .cloned()
+        .collect::<BTreeSet<_>>();
+    if material_zone_ids.len() != descriptor.material_zones.len() {
+        return Err(DesktopError::InvalidImportedModule(
+            "material zones must be unique".to_string(),
+        ));
+    }
+
+    let connector_ids = descriptor
+        .connectors
+        .iter()
+        .map(|connector| connector.id.clone())
+        .collect::<BTreeSet<_>>();
+    if connector_ids.len() != descriptor.connectors.len() {
+        return Err(DesktopError::InvalidImportedModule(
+            "connector ids must be unique".to_string(),
+        ));
+    }
+
+    let region_ids = descriptor
+        .regions
+        .iter()
+        .map(|region| region.id.clone())
+        .collect::<BTreeSet<_>>();
+    if region_ids.len() != descriptor.regions.len() {
+        return Err(DesktopError::InvalidImportedModule(
+            "region ids must be unique".to_string(),
+        ));
+    }
+
+    for connector in &descriptor.connectors {
+        if !style_pack_knows_connector_kind(style_pack, &connector.kind) {
+            return Err(DesktopError::InvalidImportedModule(format!(
+                "connector kind '{}' is unknown to style pack {}",
+                connector.kind, style_pack.id
+            )));
+        }
+    }
+
+    for region in &descriptor.regions {
+        if region.min > region.max {
+            return Err(DesktopError::InvalidImportedModule(format!(
+                "region '{}' has min greater than max",
+                region.id
+            )));
+        }
+    }
+
+    Ok(())
+}
+
+fn imported_contract_to_descriptor(
+    import_path: &str,
+    contract: &ImportedModuleContract,
+) -> Result<ModuleDescriptor, DesktopError> {
+    if contract.version != 1 {
+        return Err(DesktopError::InvalidImportedModule(
+            "version must be 1 for the current Blender handoff contract".to_string(),
+        ));
+    }
+
+    if !contract.source_asset.format.eq_ignore_ascii_case("glb") {
+        return Err(DesktopError::InvalidImportedModule(
+            "sourceAsset.format must be 'glb' for the current Blender handoff contract".to_string(),
+        ));
+    }
+
+    let resolved_source_asset_path =
+        resolve_import_source_asset_path(import_path, &contract.source_asset.path);
+    if !resolved_source_asset_path.is_file() {
+        return Err(DesktopError::InvalidImportedModule(format!(
+            "sourceAsset '{}' does not exist",
+            contract.source_asset.path
+        )));
+    }
+
+    Ok(contract.to_module_descriptor(to_repo_relative_display_path(&resolved_source_asset_path)))
+}
 fn next_instance_id(project: &Project, module_id: &str) -> String {
     let prefix = module_id
         .chars()
@@ -665,6 +849,27 @@ pub fn load_canonical_document() -> Result<DesktopDocument, DesktopError> {
     Ok(document)
 }
 
+pub fn import_module_descriptor(
+    mut document: DesktopDocument,
+    import_path: &str,
+) -> Result<DesktopDocument, DesktopError> {
+    let descriptor = load_imported_module_descriptor(import_path)?;
+    validate_imported_module_descriptor(&document.style_pack, &descriptor)?;
+    document.style_pack.modules.push(descriptor);
+    Ok(document)
+}
+
+pub fn import_module_contract(
+    mut document: DesktopDocument,
+    import_path: &str,
+) -> Result<DesktopDocument, DesktopError> {
+    let contract = load_imported_module_contract(import_path)?;
+    let descriptor = imported_contract_to_descriptor(import_path, &contract)?;
+    validate_imported_module_descriptor(&document.style_pack, &descriptor)?;
+    document.style_pack.modules.push(descriptor);
+    Ok(document)
+}
+
 pub fn add_module_instance(
     mut document: DesktopDocument,
     module_id: &str,
@@ -689,6 +894,31 @@ pub fn add_module_instance(
     });
 
     Ok(document)
+}
+
+pub fn add_module_and_snap(
+    document: DesktopDocument,
+    module_id: &str,
+    local_connector: &str,
+    target_instance_id: &str,
+    target_connector: &str,
+) -> Result<DesktopDocument, DesktopError> {
+    let previous_count = document.project.modules.len();
+    let added_document = add_module_instance(document, module_id)?;
+    let added_instance_id = added_document
+        .project
+        .modules
+        .get(previous_count)
+        .map(|instance| instance.instance_id.clone())
+        .ok_or_else(|| DesktopError::MissingInstance(module_id.to_string()))?;
+
+    snap_module_instance(
+        added_document,
+        &added_instance_id,
+        local_connector,
+        target_instance_id,
+        target_connector,
+    )
 }
 
 pub fn remove_module_instance(
@@ -994,6 +1224,28 @@ pub fn save_project(project: &Project, project_path: &str) -> Result<String, Des
     Ok(project_path.to_string())
 }
 
+pub fn save_style_pack(
+    style_pack: &StylePack,
+    style_pack_path: &str,
+) -> Result<String, DesktopError> {
+    let resolved_style_pack_path = resolve_input_path(style_pack_path);
+    if let Some(parent) = resolved_style_pack_path.parent() {
+        std::fs::create_dir_all(parent).map_err(|error| DesktopError::WritePath {
+            path: parent.display().to_string(),
+            message: error.to_string(),
+        })?;
+    }
+
+    let json = to_pretty_json(style_pack)
+        .map_err(|error| DesktopError::SerializeProject(error.to_string()))?;
+    std::fs::write(&resolved_style_pack_path, json).map_err(|error| DesktopError::WritePath {
+        path: resolved_style_pack_path.display().to_string(),
+        message: error.to_string(),
+    })?;
+
+    Ok(style_pack_path.to_string())
+}
+
 pub fn validate_document(document: DesktopDocument) -> Result<ValidationReport, DesktopError> {
     Ok(validate_project(&document.project, &document.style_pack))
 }
@@ -1015,10 +1267,11 @@ pub fn export_canonical_document() -> Result<DesktopExportBundle, DesktopError> 
 
 pub mod commands {
     use super::{
-        add_module_decal_layer, add_module_instance, apply_edit_command,
+        add_module_and_snap, add_module_decal_layer, add_module_instance, apply_edit_command,
         clear_connector_attachment, create_fighter_template, export_document,
-        load_canonical_document, load_document, mirror_module_instance, preview_edit_command,
-        remove_module_decal_layer, remove_module_instance, save_project, set_connector_attachment,
+        import_module_contract, import_module_descriptor, load_canonical_document, load_document,
+        mirror_module_instance, preview_edit_command, remove_module_decal_layer,
+        remove_module_instance, save_project, save_style_pack, set_connector_attachment,
         set_fill_layer_palette, snap_module_instance, validate_document, DesktopCommandPreview,
         DesktopDocument, DesktopExportBundle, EditCommand, ValidationReport,
     };
@@ -1050,6 +1303,39 @@ pub mod commands {
         module_id: String,
     ) -> Result<DesktopDocument, String> {
         add_module_instance(document, &module_id).map_err(|error| error.to_string())
+    }
+
+    #[tauri::command]
+    pub fn add_module_and_snap_command(
+        document: DesktopDocument,
+        module_id: String,
+        local_connector: String,
+        target_instance_id: String,
+        target_connector: String,
+    ) -> Result<DesktopDocument, String> {
+        add_module_and_snap(
+            document,
+            &module_id,
+            &local_connector,
+            &target_instance_id,
+            &target_connector,
+        )
+        .map_err(|error| error.to_string())
+    }
+
+    #[tauri::command]
+    pub fn import_module_contract_command(
+        document: DesktopDocument,
+        import_path: String,
+    ) -> Result<DesktopDocument, String> {
+        if import_path
+            .to_ascii_lowercase()
+            .ends_with(".moduleimport.json")
+        {
+            import_module_contract(document, &import_path).map_err(|error| error.to_string())
+        } else {
+            import_module_descriptor(document, &import_path).map_err(|error| error.to_string())
+        }
     }
 
     #[tauri::command]
@@ -1168,6 +1454,14 @@ pub mod commands {
     }
 
     #[tauri::command]
+    pub fn save_style_pack_command(
+        document: DesktopDocument,
+        style_pack_path: String,
+    ) -> Result<String, String> {
+        save_style_pack(&document.style_pack, &style_pack_path).map_err(|error| error.to_string())
+    }
+
+    #[tauri::command]
     pub fn validate_document_command(
         document: DesktopDocument,
     ) -> Result<ValidationReport, String> {
@@ -1186,14 +1480,15 @@ pub mod commands {
 mod tests {
     use super::{
         add_module_decal_layer, add_module_instance, apply_edit_command,
-        clear_connector_attachment, create_fighter_template, export_canonical_document,
-        load_canonical_document, load_document, mirror_module_instance, preview_edit_command,
-        remove_module_decal_layer, remove_module_instance, repo_root, save_project,
-        set_connector_attachment, set_fill_layer_palette, snap_module_instance, validate_document,
-        DesktopPreviewValue,
+        clear_connector_attachment, commands, create_fighter_template, export_canonical_document,
+        export_document, import_module_contract, load_canonical_document, load_document,
+        mirror_module_instance, preview_edit_command, remove_module_decal_layer,
+        remove_module_instance, repo_root, save_project, save_style_pack, set_connector_attachment,
+        set_fill_layer_palette, snap_module_instance, validate_document, DesktopPreviewValue,
     };
     use polybash_contracts::{
-        parse_project_str, AssetType, EditCommand, PaintLayer, ReportStatus, TransformField,
+        parse_project_str, parse_stylepack_str, AssetType, EditCommand, PaintLayer, ReportStatus,
+        TransformField,
     };
     use tempfile::tempdir;
 
@@ -1242,6 +1537,189 @@ mod tests {
         assert_eq!(document.style_pack.id, "zx_fighter_v1");
     }
 
+    #[test]
+    fn imported_module_contract_can_be_added_validated_and_exported() {
+        let document = load_canonical_document().expect("canonical document");
+        let imported = import_module_contract(
+            document,
+            "fixtures/imports/valid/prop_crate_round_a.moduleimport.json",
+        )
+        .expect("imported module contract");
+
+        let imported_descriptor = imported
+            .style_pack
+            .modules
+            .iter()
+            .find(|module| module.id == "prop_crate_round_a")
+            .expect("imported module descriptor");
+
+        assert_eq!(
+            imported_descriptor
+                .source_asset
+                .as_ref()
+                .map(|asset| asset.path.as_str()),
+            Some("fixtures/imports/assets/prop_crate_round_a.glb")
+        );
+        assert_eq!(
+            imported_descriptor
+                .source_asset
+                .as_ref()
+                .map(|asset| asset.format.as_str()),
+            Some("glb")
+        );
+
+        let placed = add_module_instance(imported, "prop_crate_round_a")
+            .expect("imported module should place cleanly");
+
+        assert!(placed
+            .project
+            .modules
+            .iter()
+            .any(|instance| instance.module_id == "prop_crate_round_a"));
+
+        let report = validate_document(placed.clone()).expect("validation report");
+        assert_eq!(report.status, ReportStatus::Ok);
+
+        let bundle = export_document(placed).expect("export bundle");
+        assert_eq!(bundle.report.status, ReportStatus::Ok);
+    }
+
+    #[test]
+    fn invalid_imported_module_contract_is_rejected() {
+        let document = load_canonical_document().expect("canonical document");
+        let error = import_module_contract(
+            document,
+            "fixtures/imports/invalid/prop_crate_bad.moduleimport.json",
+        )
+        .expect_err("invalid imported module contract should fail");
+
+        assert_eq!(
+            error.to_string(),
+            "invalid imported module contract: sourceAsset.format must be 'glb' for the current Blender handoff contract"
+        );
+    }
+
+    #[test]
+    fn imported_module_contract_without_material_zones_is_rejected() {
+        let document = load_canonical_document().expect("canonical document");
+        let error = import_module_contract(
+            document,
+            "fixtures/imports/invalid/prop_crate_no_materials.moduleimport.json",
+        )
+        .expect_err("material-zone-free import contract should fail");
+
+        assert_eq!(
+            error.to_string(),
+            "invalid imported module contract: at least one material zone is required"
+        );
+    }
+
+    #[test]
+    fn imported_module_contract_with_duplicate_material_zones_is_rejected() {
+        let document = load_canonical_document().expect("canonical document");
+        let error = import_module_contract(
+            document,
+            "fixtures/imports/invalid/prop_crate_duplicate_materials.moduleimport.json",
+        )
+        .expect_err("duplicate material-zone import contract should fail");
+
+        assert_eq!(
+            error.to_string(),
+            "invalid imported module contract: material zones must be unique"
+        );
+    }
+
+    #[test]
+    fn imported_module_contract_with_blank_material_zone_is_rejected() {
+        let document = load_canonical_document().expect("canonical document");
+        let error = import_module_contract(
+            document,
+            "fixtures/imports/invalid/prop_crate_blank_zone.moduleimport.json",
+        )
+        .expect_err("blank material-zone import contract should fail");
+
+        assert_eq!(
+            error.to_string(),
+            "invalid imported module contract: material zones must be non-empty"
+        );
+    }
+
+    #[test]
+    fn descriptor_style_import_with_blank_material_zone_is_rejected_through_command_dispatch() {
+        let document = load_canonical_document().expect("canonical document");
+        let error = commands::import_module_contract_command(
+            document,
+            "fixtures/imports/invalid/fighter_shoulder_guard_blank_zone.module.json".to_string(),
+        )
+        .expect_err("blank material-zone descriptor import should fail");
+
+        assert_eq!(
+            error,
+            "invalid imported module contract: material zones must be non-empty"
+        );
+    }
+
+    #[test]
+    fn descriptor_style_import_without_material_zones_is_rejected_through_command_dispatch() {
+        let document = load_canonical_document().expect("canonical document");
+        let error = commands::import_module_contract_command(
+            document,
+            "fixtures/imports/invalid/fighter_shoulder_guard_no_materials.module.json".to_string(),
+        )
+        .expect_err("material-zone-free descriptor import should fail");
+
+        assert_eq!(
+            error,
+            "invalid imported module contract: at least one material zone is required"
+        );
+    }
+
+    #[test]
+    fn descriptor_style_import_with_duplicate_material_zones_is_rejected_through_command_dispatch()
+    {
+        let document = load_canonical_document().expect("canonical document");
+        let error = commands::import_module_contract_command(
+            document,
+            "fixtures/imports/invalid/fighter_shoulder_guard_duplicate_materials.module.json"
+                .to_string(),
+        )
+        .expect_err("duplicate material-zone descriptor import should fail");
+
+        assert_eq!(
+            error,
+            "invalid imported module contract: material zones must be unique"
+        );
+    }
+
+    #[test]
+    fn descriptor_style_import_with_non_glb_source_asset_is_rejected_through_command_dispatch() {
+        let document = load_canonical_document().expect("canonical document");
+        let error = commands::import_module_contract_command(
+            document,
+            "fixtures/imports/invalid/fighter_shoulder_guard_bad_format.module.json".to_string(),
+        )
+        .expect_err("descriptor import with non-glb source asset should fail");
+
+        assert_eq!(
+            error,
+            "invalid imported module contract: sourceAsset.format must be 'glb' for imported reusable modules"
+        );
+    }
+
+    #[test]
+    fn descriptor_style_import_with_missing_source_asset_is_rejected_through_command_dispatch() {
+        let document = load_canonical_document().expect("canonical document");
+        let error = commands::import_module_contract_command(
+            document,
+            "fixtures/imports/invalid/fighter_shoulder_guard_missing_asset.module.json".to_string(),
+        )
+        .expect_err("descriptor import with missing source asset should fail");
+
+        assert_eq!(
+            error,
+            "invalid imported module contract: sourceAsset 'fixtures/imports/assets/missing_shoulder_guard.glb' does not exist"
+        );
+    }
     #[test]
     fn module_instance_can_be_added_with_deterministic_defaults() {
         let document = create_fighter_template(
@@ -1602,6 +2080,68 @@ mod tests {
     }
 
     #[test]
+    fn edit_command_updates_connector_attachment_through_desktop_bridge() {
+        let document = load_canonical_document().expect("canonical document");
+
+        let updated = apply_edit_command(
+            document,
+            EditCommand::SetConnectorAttachment {
+                instance_id: "arm_l_01".to_string(),
+                local_connector: "hand_socket_l".to_string(),
+                target_instance_id: "weapon_01".to_string(),
+                target_connector: "grip".to_string(),
+            },
+        )
+        .expect("edit command should apply");
+        let arm = updated
+            .project
+            .modules
+            .iter()
+            .find(|instance| instance.instance_id == "arm_l_01")
+            .expect("arm instance");
+
+        assert_eq!(arm.connector_attachments.len(), 1);
+        assert_eq!(
+            arm.connector_attachments[0].local_connector,
+            "hand_socket_l"
+        );
+        assert_eq!(arm.connector_attachments[0].target_instance_id, "weapon_01");
+        assert_eq!(arm.connector_attachments[0].target_connector, "grip");
+    }
+
+    #[test]
+    fn preview_edit_command_clears_connector_attachment_through_desktop_bridge() {
+        let document = load_canonical_document().expect("canonical document");
+
+        let preview = preview_edit_command(
+            document,
+            EditCommand::ClearConnectorAttachment {
+                instance_id: "torso_01".to_string(),
+                local_connector: "neck".to_string(),
+            },
+        )
+        .expect("preview should work");
+        let torso = preview
+            .document
+            .project
+            .modules
+            .iter()
+            .find(|instance| instance.instance_id == "torso_01")
+            .expect("torso instance");
+
+        assert!(torso
+            .connector_attachments
+            .iter()
+            .all(|attachment| attachment.local_connector != "neck"));
+        assert_eq!(preview.diff.op, "clear_connector_attachment");
+        assert_eq!(preview.diff.target, "torso_01");
+        assert_eq!(
+            preview.diff.changes[0].before,
+            DesktopPreviewValue::Text("head_01::neck_socket".to_string())
+        );
+        assert_eq!(preview.diff.changes[0].after, DesktopPreviewValue::Missing);
+    }
+    #[test]
     fn connector_attachment_is_updated_through_desktop_bridge() {
         let document = load_canonical_document().expect("canonical document");
 
@@ -1699,6 +2239,39 @@ mod tests {
     }
 
     #[test]
+    fn recommended_weapon_browser_target_round_trips_through_command_dispatch() {
+        let document = load_canonical_document().expect("canonical document");
+
+        let updated = commands::add_module_and_snap_command(
+            document,
+            "weapon_sword_basic".to_string(),
+            "grip".to_string(),
+            "arm_r_01".to_string(),
+            "hand_socket_r".to_string(),
+        )
+        .expect("recommended weapon target snapped through combined command dispatch");
+        let weapon = updated
+            .project
+            .modules
+            .iter()
+            .find(|instance| instance.instance_id == "weapon_sword_basic_01")
+            .expect("weapon instance");
+
+        assert_eq!(weapon.transform.position, [0.9499999, 1.0, 0.0]);
+        assert_eq!(weapon.transform.rotation, [0.0, 0.0, 90.0]);
+        assert_eq!(weapon.connector_attachments.len(), 1);
+        assert_eq!(weapon.connector_attachments[0].local_connector, "grip");
+        assert_eq!(
+            weapon.connector_attachments[0].target_instance_id,
+            "arm_r_01"
+        );
+        assert_eq!(
+            weapon.connector_attachments[0].target_connector,
+            "hand_socket_r"
+        );
+    }
+
+    #[test]
     fn snap_module_instance_rejects_incompatible_connector_kinds() {
         let document = create_fighter_template(
             "fighter_template_01",
@@ -1743,6 +2316,179 @@ mod tests {
     }
 
     #[test]
+    fn blender_module_contract_imports_into_the_desktop_document() {
+        let document = load_canonical_document().expect("canonical document");
+
+        let imported = import_module_contract(
+            document,
+            "fixtures/imports/valid/weapon_hammer_basic.import.json",
+        )
+        .expect("imported module contract");
+        let descriptor = imported
+            .style_pack
+            .modules
+            .iter()
+            .find(|module| module.id == "weapon_hammer_basic")
+            .expect("imported module descriptor");
+
+        assert_eq!(descriptor.asset_type, AssetType::Weapon);
+        assert_eq!(descriptor.connectors.len(), 1);
+        assert_eq!(descriptor.material_zones, vec!["head", "handle"]);
+    }
+
+    #[test]
+    fn descriptor_style_module_can_be_placed_validated_and_exported_through_command_dispatch() {
+        let document = load_canonical_document().expect("canonical document");
+        let document = commands::import_module_contract_command(
+            document,
+            "fixtures/imports/valid/fighter_shoulder_guard_a.module.json".to_string(),
+        )
+        .expect("descriptor-style import should succeed");
+        let document = add_module_instance(document, "fighter_shoulder_guard_a")
+            .expect("descriptor-style imported module should be placeable");
+
+        let report = validate_document(document.clone()).expect("validation report");
+        let bundle = export_document(document.clone()).expect("export bundle");
+        let added = document
+            .project
+            .modules
+            .iter()
+            .find(|instance| instance.module_id == "fighter_shoulder_guard_a")
+            .expect("descriptor-style imported module instance");
+
+        assert_eq!(report.status, ReportStatus::Ok);
+        assert_eq!(bundle.report.status, ReportStatus::Ok);
+        assert!(bundle.glb_bytes_base64.starts_with("Z2xURg"));
+        assert_eq!(added.instance_id, "fighter_shoulder_guard_a_01");
+    }
+
+    #[test]
+    fn imported_module_can_be_placed_validated_and_exported_without_manual_json_edits() {
+        let document = load_canonical_document().expect("canonical document");
+        let document = import_module_contract(
+            document,
+            "fixtures/imports/valid/weapon_hammer_basic.import.json",
+        )
+        .expect("imported module contract");
+        let document = add_module_instance(document, "weapon_hammer_basic")
+            .expect("imported module instance should be placeable");
+
+        let report = validate_document(document.clone()).expect("validation report");
+        let bundle = export_document(document.clone()).expect("export bundle");
+        let added = document
+            .project
+            .modules
+            .iter()
+            .find(|instance| instance.module_id == "weapon_hammer_basic")
+            .expect("imported module instance");
+
+        assert_eq!(report.status, ReportStatus::Ok);
+        assert_eq!(bundle.report.status, ReportStatus::Ok);
+        assert!(bundle.glb_bytes_base64.starts_with("Z2xURg"));
+        assert_eq!(added.instance_id, "weapon_hammer_basic_01");
+    }
+
+    #[test]
+    fn saved_style_pack_round_trips_imported_module_for_reload_and_placement() {
+        let document = load_canonical_document().expect("canonical document");
+        let document = import_module_contract(
+            document,
+            "fixtures/imports/valid/prop_crate_round_a.moduleimport.json",
+        )
+        .expect("imported module contract");
+        let out_dir = tempdir().expect("temp dir");
+        let style_pack_path = out_dir.path().join("saved.stylepack.json");
+        let project_path = repo_root().join("fixtures/projects/valid/fighter_basic.zxmodel.json");
+
+        let returned =
+            save_style_pack(&document.style_pack, &style_pack_path.display().to_string())
+                .expect("saved style pack path");
+        let saved = std::fs::read_to_string(&style_pack_path).expect("saved style pack");
+        let reparsed = parse_stylepack_str(&saved).expect("saved style pack parses");
+        let reloaded = load_document(
+            &project_path.display().to_string(),
+            &style_pack_path.display().to_string(),
+        )
+        .expect("reloaded document");
+        let placed = add_module_instance(reloaded, "prop_crate_round_a")
+            .expect("saved imported module should still be placeable");
+        let descriptor = reparsed
+            .module("prop_crate_round_a")
+            .expect("saved imported module descriptor");
+
+        assert_eq!(returned, style_pack_path.display().to_string());
+        assert!(saved.contains("\n  \"modules\": ["));
+        assert_eq!(descriptor.asset_type, AssetType::PropSmall);
+        assert_eq!(
+            descriptor
+                .source_asset
+                .as_ref()
+                .map(|asset| asset.path.as_str()),
+            Some("fixtures/imports/assets/prop_crate_round_a.glb")
+        );
+        assert!(placed
+            .project
+            .modules
+            .iter()
+            .any(|instance| instance.module_id == "prop_crate_round_a"));
+    }
+
+    #[test]
+    fn saved_style_pack_round_trips_authored_module_for_reload_and_placement() {
+        let document = load_canonical_document().expect("canonical document");
+        let mut document = document;
+        let head = document
+            .style_pack
+            .modules
+            .iter_mut()
+            .find(|module| module.id == "fighter_head_base_a")
+            .expect("head descriptor");
+        head.connectors[0].id = "neck_socket_top".to_string();
+        head.regions.push(polybash_contracts::RegionDescriptor {
+            id: "brow_height".to_string(),
+            min: -0.1,
+            max: 0.12,
+        });
+        head.material_zones.push("accent".to_string());
+
+        let out_dir = tempdir().expect("temp dir");
+        let style_pack_path = out_dir.path().join("authored_library.stylepack.json");
+        save_style_pack(&document.style_pack, &style_pack_path.display().to_string())
+            .expect("saved style pack path");
+
+        let reloaded = load_document(
+            "fixtures/projects/valid/fighter_basic.zxmodel.json",
+            &style_pack_path.display().to_string(),
+        )
+        .expect("reloaded document");
+        let placed = add_module_instance(reloaded, "fighter_head_base_a")
+            .expect("saved authored module should still be placeable");
+        let reloaded_head = placed
+            .style_pack
+            .module("fighter_head_base_a")
+            .expect("reloaded head descriptor");
+        let added = placed
+            .project
+            .modules
+            .iter()
+            .find(|instance| instance.instance_id == "fighter_head_base_a_01")
+            .expect("added authored reusable module instance");
+
+        assert_eq!(reloaded_head.connectors[0].id, "neck_socket_top");
+        assert!(reloaded_head
+            .regions
+            .iter()
+            .any(|region| region.id == "brow_height"));
+        assert!(reloaded_head
+            .material_zones
+            .iter()
+            .any(|zone| zone == "accent"));
+        assert_eq!(added.module_id, "fighter_head_base_a");
+        assert!(added.region_params.contains_key("brow_height"));
+        assert!(added.material_slots.contains_key("accent"));
+    }
+
+    #[test]
     fn save_project_writes_pretty_json_to_requested_path() {
         let document = load_canonical_document().expect("canonical document");
         let out_dir = tempdir().expect("temp dir");
@@ -1756,5 +2502,85 @@ mod tests {
         assert_eq!(returned, out_path.display().to_string());
         assert!(saved.contains("\n  \"id\": \"fighter_basic\""));
         assert_eq!(reparsed.id, "fighter_basic");
+    }
+
+    #[test]
+    fn save_style_pack_writes_pretty_json_to_requested_path() {
+        let document = load_canonical_document().expect("canonical document");
+        let out_dir = tempdir().expect("temp dir");
+        let out_path = out_dir.path().join("authored_library.stylepack.json");
+
+        let returned = save_style_pack(&document.style_pack, &out_path.display().to_string())
+            .expect("saved style pack path");
+        let saved = std::fs::read_to_string(&out_path).expect("saved style pack");
+        let reparsed = parse_stylepack_str(&saved).expect("saved style pack parses");
+
+        assert_eq!(returned, out_path.display().to_string());
+        assert!(saved.contains("\n  \"id\": \"zx_fighter_v1\""));
+        assert_eq!(reparsed.id, "zx_fighter_v1");
+    }
+
+    #[test]
+    fn saved_style_pack_reloads_imported_and_authored_reusable_modules() {
+        let document = load_canonical_document().expect("canonical document");
+        let mut document = import_module_contract(
+            document,
+            "fixtures/imports/valid/weapon_hammer_basic.import.json",
+        )
+        .expect("imported module contract");
+        let head = document
+            .style_pack
+            .modules
+            .iter_mut()
+            .find(|module| module.id == "fighter_head_base_a")
+            .expect("head descriptor");
+        head.connectors[0].id = "neck_socket_top".to_string();
+        head.regions.push(polybash_contracts::RegionDescriptor {
+            id: "brow_height".to_string(),
+            min: -0.1,
+            max: 0.12,
+        });
+        head.material_zones.push("accent".to_string());
+
+        let out_dir = tempdir().expect("temp dir");
+        let out_path = out_dir.path().join("authored_library.stylepack.json");
+        save_style_pack(&document.style_pack, &out_path.display().to_string())
+            .expect("saved style pack path");
+
+        let reloaded = load_document(
+            "fixtures/projects/valid/fighter_basic.zxmodel.json",
+            &out_path.display().to_string(),
+        )
+        .expect("reloaded document");
+        let imported = reloaded
+            .style_pack
+            .modules
+            .iter()
+            .find(|module| module.id == "weapon_hammer_basic")
+            .expect("reloaded imported module");
+        let reloaded_head = reloaded
+            .style_pack
+            .modules
+            .iter()
+            .find(|module| module.id == "fighter_head_base_a")
+            .expect("reloaded head descriptor");
+
+        assert_eq!(imported.asset_type, AssetType::Weapon);
+        assert_eq!(
+            imported
+                .source_asset
+                .as_ref()
+                .map(|source_asset| source_asset.path.as_str()),
+            Some("fixtures/imports/source/weapon_hammer_basic.glb")
+        );
+        assert_eq!(reloaded_head.connectors[0].id, "neck_socket_top");
+        assert!(reloaded_head
+            .regions
+            .iter()
+            .any(|region| region.id == "brow_height"));
+        assert!(reloaded_head
+            .material_zones
+            .iter()
+            .any(|zone| zone == "accent"));
     }
 }

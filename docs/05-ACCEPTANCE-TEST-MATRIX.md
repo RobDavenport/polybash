@@ -62,6 +62,17 @@ The exact names may vary, but the repo should end up with equivalents to:
 - `fixtures/projects/invalid/bad_connector.zxmodel.json`
 - `fixtures/stylepacks/invalid/missing_palette.stylepack.json`
 - `fixtures/commands/invalid/unknown_op.json`
+- `fixtures/imports/invalid/prop_crate_no_materials.moduleimport.json`
+- `fixtures/imports/invalid/prop_crate_duplicate_materials.moduleimport.json`
+- `fixtures/imports/invalid/prop_crate_blank_zone.moduleimport.json`
+
+### Imported-module contract fixtures
+- `fixtures/imports/valid/prop_crate_round_a.moduleimport.json`
+- `fixtures/imports/valid/fighter_shoulder_guard_a.module.json`
+- `fixtures/imports/invalid/fighter_shoulder_guard_blank_zone.module.json`
+- imported reusable modules must point at a `.glb` source asset and declare material zones that are present, non-empty, and unique
+- descriptor-style `.module.json` imports and versioned `.moduleimport.json` imports both run through the same desktop validation seam
+- UV unwrap/editing remains Blender-owned for this slice; fixture coverage validates the declared metadata seam rather than mesh UV topology, and that metadata-first seam is the intended acceptance boundary for the current M2 import/material contract
 
 ## 5. Pass and fail rules
 

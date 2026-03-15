@@ -1,8 +1,10 @@
 import { describe, expect, it } from "vitest";
 import {
   ensureProjectSavePath,
+  ensureStylePackSavePath,
   resolveDialogPath,
-  suggestProjectSavePath
+  suggestProjectSavePath,
+  suggestStylePackSavePath
 } from "./documentPaths";
 import type { DesktopDocument } from "./types";
 
@@ -22,7 +24,16 @@ describe("documentPaths", () => {
     );
   });
 
-  it("prefers explicit save paths when suggesting a save target", () => {
+  it("appends the style pack extension when needed", () => {
+    expect(ensureStylePackSavePath("C:/tmp/zx_fighter_v1")).toBe(
+      "C:/tmp/zx_fighter_v1.stylepack.json"
+    );
+    expect(ensureStylePackSavePath("C:/tmp/zx_fighter_v1.stylepack.json")).toBe(
+      "C:/tmp/zx_fighter_v1.stylepack.json"
+    );
+  });
+
+  it("prefers explicit save paths when suggesting a project target", () => {
     const document = {
       project: {} as DesktopDocument["project"],
       stylePack: {} as DesktopDocument["stylePack"],
@@ -35,4 +46,23 @@ describe("documentPaths", () => {
 
     expect(suggestProjectSavePath(document)).toBe("out/desktop/fighter_basic_saved.zxmodel.json");
   });
+
+  it("prefers the loaded style pack path when suggesting a style pack target", () => {
+    const document = {
+      project: {} as DesktopDocument["project"],
+      stylePack: {
+        id: "zx_fighter_v1"
+      } as DesktopDocument["stylePack"],
+      paths: {
+        projectPath: "fixtures/projects/valid/fighter_basic.zxmodel.json",
+        stylePackPath: "fixtures/stylepacks/valid/zx_fighter_v1.stylepack.json",
+        savePath: "out/desktop/fighter_basic_saved.zxmodel.json"
+      }
+    } as DesktopDocument;
+
+    expect(suggestStylePackSavePath(document)).toBe(
+      "fixtures/stylepacks/valid/zx_fighter_v1_authored.stylepack.json"
+    );
+  });
 });
+

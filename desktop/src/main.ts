@@ -1,24 +1,73 @@
 import { invoke } from "@tauri-apps/api/core";
 import { open, save } from "@tauri-apps/plugin-dialog";
 import {
+  buildAddModuleAndSnapRequest,
+  buildPrimarySuggestedPlacementRequest,
+  buildSuggestedPlacementAlternativeSummary,
+  buildModuleLibrarySelectionFeedback,
   buildRigDetail,
   buildModuleLibrary,
+  buildModuleLibraryAddActionHint,
+  buildModuleLibraryAddActionLabel,
+  buildModuleLibraryPreview,
+  buildModuleLibrarySummary,
   buildModuleCards,
   buildSelectedModuleDetail,
-  resolveSelectedModuleId
+  buildSelectedModuleValidationDetail,
+  filterModuleLibrary,
+  searchModuleLibrary,
+  buildSuggestedPlacementGroups,
+  resolveSelectedModuleId,
+  type ModuleLibraryEntry,
+  type ModuleLibraryFilter
 } from "./documentInspector";
 import {
   ensureProjectSavePath,
+  ensureStylePackSavePath,
   resolveDialogPath,
-  suggestProjectSavePath
+  suggestProjectSavePath,
+  suggestStylePackSavePath
 } from "./documentPaths";
-import { captureUndoSnapshot, restoreUndoSnapshot } from "./historyState";
+import {
+  buildVisibleHistoryEntries,
+  createHistoryState,
+  pushHistoryEntry,
+  redoHistory,
+  undoHistory
+} from "./historyState";
+import {
+  addReusableModuleDraftRegion,
+  applyReusableModuleDraft,
+  duplicateReusableModule,
+  createReusableModuleDraft,
+  deleteReusableModule,
+  renameReusableModule,
+  suggestDuplicateReusableModuleId,
+  type ReusableModuleDraft,
+  setReusableModuleDraftMaterialZones,
+  updateReusableModuleDraftConnector
+} from "./moduleDraft";
+import {
+  parseReusableModuleMaterialZones,
+  validateReusableModuleRegionDraft
+} from "./moduleDraftForm";
+import {
+  resolveConnectorSelectValue,
+  resolveMaterialSelectValue,
+  resolveRegionSliderValue,
+  resolveRigTemplateValue,
+  resolveTransformInputValue,
+  resolveVisibleSockets,
+  type PendingEditPreview,
+  type PendingMaterialPreview
+} from "./materialPreviewState";
 import { buildProxyScene } from "./sceneProjection";
 import "./styles.css";
 import type {
   DesktopCommandPreview,
   DesktopDocument,
   DesktopExportBundle,
+  DesktopHistoryState,
   DesktopPaths,
   DesktopUndoSnapshot,
   EditCommand,
@@ -26,14 +75,6 @@ import type {
   ValidationReport
 } from "./types";
 import { mountViewport } from "./viewportController";
-
-type PendingMaterialPreview = {
-  instanceId: string;
-  zone: string;
-  materialId: string;
-  command: Extract<EditCommand, { op: "assign_material_zone" }>;
-  preview: DesktopCommandPreview;
-};
 
 type ViewState = {
   document?: DesktopDocument;
@@ -45,12 +86,22 @@ type ViewState = {
   projectPath: string;
   stylePackPath: string;
   savePath: string;
+  moduleImportPath: string;
   socketName: string;
   socketBone: string;
   decalDraftId: string;
   selectedModuleId?: string;
-  undoSnapshot?: DesktopUndoSnapshot;
-  pendingMaterialPreview?: PendingMaterialPreview;
+  selectedLibraryModuleId?: string;
+  libraryFilter: ModuleLibraryFilter;
+  librarySearch: string;
+  authoredModuleIds: string[];
+  reusableModuleDraft?: ReusableModuleDraft;
+  reusableModuleMaterialZonesInput: string;
+  reusableModuleRegionId: string;
+  reusableModuleRegionMin: string;
+  reusableModuleRegionMax: string;
+  history: DesktopHistoryState;
+  pendingEditPreview?: PendingEditPreview;
 };
 
 const state: ViewState = {
@@ -59,9 +110,18 @@ const state: ViewState = {
   projectPath: "fixtures/projects/valid/fighter_basic.zxmodel.json",
   stylePackPath: "fixtures/stylepacks/valid/zx_fighter_v1.stylepack.json",
   savePath: "out/desktop/fighter_basic_saved.zxmodel.json",
+  moduleImportPath: "fixtures/imports/valid/prop_crate_round_a.moduleimport.json",
+  history: createHistoryState(),
   socketName: "weapon_r",
   socketBone: "hand_r",
-  decalDraftId: "dragon_01"
+  decalDraftId: "dragon_01",
+  reusableModuleMaterialZonesInput: "",
+  reusableModuleRegionId: "",
+  reusableModuleRegionMin: "",
+  reusableModuleRegionMax: "",
+  libraryFilter: "all",
+  librarySearch: "",
+  authoredModuleIds: []
 };
 
 let disposeViewport: (() => void) | undefined;
@@ -90,15 +150,58 @@ function render(): void {
     ? resolveSelectedModuleId(loadedDocument, state.selectedModuleId)
     : undefined;
   const cards = loadedDocument ? buildModuleCards(loadedDocument, selectedModuleId) : [];
-  const library = loadedDocument ? buildModuleLibrary(loadedDocument) : [];
+  const library = loadedDocument ? buildModuleLibrary(loadedDocument, state.authoredModuleIds) : [];
+  const librarySummary = buildModuleLibrarySummary(library);
+  const visibleLibrary = searchModuleLibrary(filterModuleLibrary(library, state.libraryFilter), state.librarySearch);
+  const selectedLibraryModuleId = loadedDocument
+    ? resolveSelectedLibraryModuleId(visibleLibrary, state.selectedLibraryModuleId)
+    : undefined;
+  const selectedLibraryPreview = loadedDocument && selectedLibraryModuleId
+    ? buildModuleLibraryPreview(loadedDocument, selectedLibraryModuleId, state.authoredModuleIds)
+    : undefined;
+  const suggestedPlacementGroups = buildSuggestedPlacementGroups(selectedLibraryPreview);
+  const suggestedPlacementAlternativeSummary = buildSuggestedPlacementAlternativeSummary(selectedLibraryPreview);
+  const primarySuggestedPlacementRequest = selectedLibraryModuleId
+    ? buildPrimarySuggestedPlacementRequest(selectedLibraryModuleId, selectedLibraryPreview)
+    : undefined;
+  const libraryAddActionLabel = buildModuleLibraryAddActionLabel(selectedLibraryPreview);
+  const libraryAddActionHint = buildModuleLibraryAddActionHint(selectedLibraryPreview);
+  const reusableModuleDraft =
+    state.reusableModuleDraft?.id === selectedLibraryModuleId ? state.reusableModuleDraft : undefined;
   const rigDetail = loadedDocument ? buildRigDetail(loadedDocument) : undefined;
   const selectedDetail = loadedDocument
     ? buildSelectedModuleDetail(loadedDocument, selectedModuleId)
     : undefined;
-  const pendingMaterialPreview =
-    selectedDetail && state.pendingMaterialPreview?.instanceId === selectedDetail.instanceId
-      ? state.pendingMaterialPreview
+  const selectedLibraryPlacementFeedback = buildModuleLibrarySelectionFeedback(selectedLibraryPreview, selectedDetail);
+  const selectedValidationDetail = loadedDocument
+    ? buildSelectedModuleValidationDetail(report, loadedDocument, selectedModuleId)
+    : undefined;
+  const pendingMaterialPreview: PendingMaterialPreview | undefined =
+    selectedDetail && state.pendingEditPreview?.kind === "material" && state.pendingEditPreview.instanceId === selectedDetail.instanceId
+      ? state.pendingEditPreview
       : undefined;
+  const pendingTransformPreview =
+    selectedDetail && state.pendingEditPreview?.kind === "transform" && state.pendingEditPreview.instanceId === selectedDetail.instanceId
+      ? state.pendingEditPreview
+      : undefined;
+  const pendingRegionPreview =
+    selectedDetail && state.pendingEditPreview?.kind === "region" && state.pendingEditPreview.instanceId === selectedDetail.instanceId
+      ? state.pendingEditPreview
+      : undefined;
+  const pendingConnectorPreview =
+    selectedDetail && state.pendingEditPreview?.kind === "connector" && state.pendingEditPreview.instanceId === selectedDetail.instanceId
+      ? state.pendingEditPreview
+      : undefined;
+  const pendingRigTemplatePreview = state.pendingEditPreview?.kind === "rig_template"
+    ? state.pendingEditPreview
+    : undefined;
+  const pendingSocketPreview = state.pendingEditPreview?.kind === "socket"
+    ? state.pendingEditPreview
+    : undefined;
+  const visibleRigSockets = rigDetail
+    ? resolveVisibleSockets(rigDetail.sockets, pendingSocketPreview)
+    : [];
+  const visibleHistoryEntries = buildVisibleHistoryEntries(state.history);
   const selectedDecalDraftId = selectedDetail?.paint.availableDecalIds.includes(state.decalDraftId)
     ? state.decalDraftId
     : (selectedDetail?.paint.availableDecalIds[0] ?? "");
@@ -144,6 +247,10 @@ function render(): void {
               }>Save As</button>
             </div>
           </label>
+          <label>
+            <span>Module Import Path</span>
+            <input id="module-import-path" value="${escapeHtml(state.moduleImportPath)}" />
+          </label>
         </div>
         <div class="actions">
           <button id="create-template">New Fighter</button>
@@ -151,7 +258,10 @@ function render(): void {
           <button id="load-canonical">Load Canonical Fighter</button>
           <button id="save" ${loadedDocument ? "" : "disabled"}>Save Project</button>
           <button id="save-as" ${loadedDocument ? "" : "disabled"}>Save As</button>
-          <button id="undo" class="secondary-button" ${state.undoSnapshot ? "" : "disabled"}>Undo</button>
+          <button id="save-stylepack-as" class="secondary-button" ${loadedDocument ? "" : "disabled"}>Save Style Pack As</button>
+          <button id="import-module" class="secondary-button" ${loadedDocument ? "" : "disabled"}>Import Module Contract</button>
+          <button id="undo" class="secondary-button" ${state.history.past.length > 0 ? "" : "disabled"}>Undo</button>
+          <button id="redo" class="secondary-button" ${state.history.future.length > 0 ? "" : "disabled"}>Redo</button>
           <button id="validate" ${loadedDocument ? "" : "disabled"}>Validate</button>
           <button id="export" ${loadedDocument ? "" : "disabled"}>Export Preview</button>
         </div>
@@ -159,6 +269,24 @@ function render(): void {
           <span>Status</span>
           <strong>${escapeHtml(state.status)}</strong>
           ${state.error ? `<p class="status-error">${escapeHtml(state.error)}</p>` : ""}
+        </div>
+        <div class="history-panel">
+          <span class="history-heading">Action History</span>
+          <strong>${state.history.past.length} undo / ${state.history.future.length} redo</strong>
+          <ul class="history-list">
+            ${visibleHistoryEntries.length > 0
+              ? visibleHistoryEntries
+                  .map(
+                    (entry) => `
+                      <li class="history-item history-item-${entry.direction}">
+                        <span>${entry.direction === "undo" ? "Undo" : "Redo"}</span>
+                        <strong>${escapeHtml(entry.label)}</strong>
+                      </li>
+                    `
+                  )
+                  .join("")
+              : `<li class="history-item history-item-empty"><span>No edits yet.</span></li>`}
+          </ul>
         </div>
       </aside>
       <main class="workspace">
@@ -237,6 +365,7 @@ function render(): void {
                         "position",
                         "Position",
                         selectedDetail.position,
+                        pendingTransformPreview,
                         "0.05"
                       )}
                       ${renderTransformInputs(
@@ -244,6 +373,7 @@ function render(): void {
                         "rotation",
                         "Rotation",
                         selectedDetail.rotation,
+                        pendingTransformPreview,
                         "1"
                       )}
                       ${renderTransformInputs(
@@ -251,10 +381,16 @@ function render(): void {
                         "scale",
                         "Scale",
                         selectedDetail.scale,
+                        pendingTransformPreview,
                         "0.05",
                         "0.01"
                       )}
                     </div>
+                    ${
+                      pendingTransformPreview
+                        ? renderEditPreviewCard(pendingTransformPreview)
+                        : ""
+                    }
                   </div>
                   <div class="inspector-block">
                     <h3>Materials</h3>
@@ -274,10 +410,11 @@ function render(): void {
                                     (materialId) => `
                                       <option value="${escapeHtml(materialId)}" ${
                                         materialId ===
-                                        resolveMaterialSelectionValue(
-                                          pendingMaterialPreview,
+                                        resolveMaterialSelectValue(
+                                          selectedDetail.instanceId,
                                           material.zone,
-                                          material.materialId
+                                          material.materialId,
+                                          pendingMaterialPreview
                                         )
                                           ? "selected"
                                           : ""
@@ -295,7 +432,7 @@ function render(): void {
                     </ul>
                     ${
                       pendingMaterialPreview
-                        ? renderMaterialPreviewCard(pendingMaterialPreview)
+                        ? renderEditPreviewCard(pendingMaterialPreview)
                         : ""
                     }
                   </div>
@@ -319,9 +456,9 @@ function render(): void {
                                         min="${region.min}"
                                         max="${region.max}"
                                         step="0.01"
-                                        value="${region.current}"
+                                        value="${resolveRegionSliderValue(selectedDetail.instanceId, region.id, region.current, pendingRegionPreview)}"
                                       />
-                                      <span>${region.current.toFixed(2)} (${Math.round(region.utilization * 100)}%)</span>
+                                      <span>${resolveRegionSliderValue(selectedDetail.instanceId, region.id, region.current, pendingRegionPreview).toFixed(2)} (${Math.round(region.utilization * 100)}%)</span>
                                     </div>
                                   </li>
                                 `
@@ -330,7 +467,13 @@ function render(): void {
                           : `<li><strong>No authored regions</strong><span>This module does not expose constrained deformation inputs.</span></li>`
                       }
                     </ul>
+                    ${
+                      pendingRegionPreview
+                        ? renderEditPreviewCard(pendingRegionPreview)
+                        : ""
+                    }
                   </div>
+                  ${renderSelectedModuleValidationInspector(selectedValidationDetail)}
                   <div class="inspector-block">
                     <h3>Connectors</h3>
                     <ul class="detail-list">
@@ -348,13 +491,26 @@ function render(): void {
                                         data-instance-id="${escapeHtml(selectedDetail.instanceId)}"
                                         data-local-connector="${escapeHtml(connector.id)}"
                                       >
-                                        <option value="">Unattached</option>
+                                        <option value="" ${
+                                          resolveConnectorSelectValue(
+                                            selectedDetail.instanceId,
+                                            connector.id,
+                                            connector.attachment,
+                                            pendingConnectorPreview
+                                          ) === ""
+                                            ? "selected"
+                                            : ""
+                                        }>Unattached</option>
                                         ${connector.compatibleTargets
                                           .map((option) => {
                                             const value = `${option.instanceId}::${option.connectorId}`;
                                             const isSelected =
-                                              connector.attachment?.targetInstanceId === option.instanceId &&
-                                              connector.attachment?.targetConnector === option.connectorId;
+                                              resolveConnectorSelectValue(
+                                                selectedDetail.instanceId,
+                                                connector.id,
+                                                connector.attachment,
+                                                pendingConnectorPreview
+                                              ) === value;
 
                                             return `
                                               <option value="${escapeHtml(value)}" ${
@@ -394,33 +550,207 @@ function render(): void {
                           : `<li><strong>No connectors</strong><span>This module is terminal in the current style pack.</span></li>`
                       }
                     </ul>
+                    ${
+                      pendingConnectorPreview
+                        ? renderEditPreviewCard(pendingConnectorPreview)
+                        : ""
+                    }
                   </div>
                 `
                 : `<p class="empty-note">Selection appears here once a project is loaded.</p>`
             }
           </section>
           <section class="panel">
-            <p class="eyebrow">Module Library</p>
-            <h2>${loadedDocument ? `${library.length} style modules` : "Load a Document"}</h2>
-            <ul class="detail-list">
-              ${
-                loadedDocument
-                  ? library
-                      .map(
-                        (entry) => `
-                          <li class="library-item">
-                            <div>
-                              <strong>${escapeHtml(entry.moduleId)}</strong>
-                              <span>${escapeHtml(entry.assetType)} | ${entry.connectorCount} connectors | ${entry.regionCount} regions</span>
-                            </div>
-                            <button class="library-add" data-module-id="${escapeHtml(entry.moduleId)}">Add</button>
-                          </li>
-                        `
-                      )
-                      .join("")
-                  : `<li><strong>No style pack</strong><span>Create or load a project first.</span></li>`
-              }
-            </ul>
+            <p class="eyebrow">Module Browser</p>
+            <h2>${loadedDocument ? `${visibleLibrary.length} of ${librarySummary.total} style modules` : "Load a Document"}</h2>
+            ${
+              loadedDocument
+                ? `
+                    <div class="library-browser">
+                      <div class="library-toolbar">
+                        <div class="library-filters">
+                          <button class="secondary-button library-filter ${state.libraryFilter === "all" ? "active" : ""}" data-library-filter="all" type="button">All (${librarySummary.total})</button>
+                          <button class="secondary-button library-filter ${state.libraryFilter === "stylePack" ? "active" : ""}" data-library-filter="stylePack" type="button">Style Pack (${librarySummary.stylePack})</button>
+                          <button class="secondary-button library-filter ${state.libraryFilter === "imported" ? "active" : ""}" data-library-filter="imported" type="button">Imported (${librarySummary.imported})</button>
+                          <button class="secondary-button library-filter ${state.libraryFilter === "authored" ? "active" : ""}" data-library-filter="authored" type="button">Authored (${librarySummary.authored})</button>
+                          <button class="secondary-button library-filter ${state.libraryFilter === "inUse" ? "active" : ""}" data-library-filter="inUse" type="button">In Use (${librarySummary.inUse})</button>
+                        </div>
+                        <label class="library-search">
+                          <span class="detail-label">Search Library</span>
+                          <input id="library-search" value="${escapeHtml(state.librarySearch)}" placeholder="Search id, source, connectors, zones, assets, or usage" />
+                        </label>
+                      </div>
+                      <div class="library-grid">
+                        ${visibleLibrary
+                          .map(
+                            (entry) => `
+                              <button
+                                class="library-card ${entry.moduleId === selectedLibraryModuleId ? "selected" : ""}"
+                                data-library-module-id="${escapeHtml(entry.moduleId)}"
+                                type="button"
+                              >
+                                <div class="library-card-meta">
+                                  <span class="library-card-type">${escapeHtml(entry.assetType)}</span>
+                                  <span class="library-card-origin library-card-origin-${escapeHtml(entry.source)}">${entry.source === "imported" ? "Imported" : entry.source === "authored" ? "Authored" : "Style Pack"}</span>
+                                </div>
+                                <strong>${escapeHtml(entry.moduleId)}</strong>
+                                <span>${entry.connectorCount} connectors | ${entry.regionCount} regions | ${entry.materialZoneCount} zones | ${entry.placementCount} placed</span>
+                              </button>
+                            `
+                          )
+                          .join("")}
+                      </div>
+                      ${
+                        selectedLibraryPreview
+                          ? `
+                              <div class="library-preview">
+                                <div>
+                                  <p class="detail-label">Selected Preview</p>
+                                  <h3>${escapeHtml(selectedLibraryPreview.moduleId)}</h3>
+                                  <p class="path-note">${selectedLibraryPreview.source === "imported" ? "Imported reusable module" : selectedLibraryPreview.source === "authored" ? "Authored reusable module" : "Style-pack reusable module"}</p>
+                                  <p class="path-note">${selectedLibraryPreview.placementCount} placed instance${selectedLibraryPreview.placementCount === 1 ? "" : "s"}</p>
+                                  <p class="path-note">${escapeHtml(selectedLibraryPreview.placementHint)}</p>
+                                  ${
+                                    selectedLibraryPlacementFeedback
+                                      ? `<p class="path-note">${escapeHtml(selectedLibraryPlacementFeedback)}</p>`
+                                      : ""
+                                  }
+                                </div>
+                                <div class="library-preview-stage">
+                                  <div class="library-preview-bars">
+                                    <span class="library-preview-bar library-preview-bar-width" style="height: ${Math.max(selectedLibraryPreview.silhouette.width * 96, 18)}px"></span>
+                                    <span class="library-preview-bar library-preview-bar-height" style="height: ${Math.max(selectedLibraryPreview.silhouette.height * 96, 18)}px"></span>
+                                    <span class="library-preview-bar library-preview-bar-depth" style="height: ${Math.max(selectedLibraryPreview.silhouette.depth * 96, 18)}px"></span>
+                                  </div>
+                                  <p class="path-note">Dominant axis: ${escapeHtml(selectedLibraryPreview.silhouette.dominantAxis.toUpperCase())}</p>
+                                </div>
+                                <div class="library-preview-meta">
+                                  <div>
+                                    <span class="detail-label">Connectors</span>
+                                    <div class="library-badges">
+                                      ${selectedLibraryPreview.connectors
+                                        .map(
+                                          (connector) => `<span class="library-badge">${escapeHtml(connector.id)} | ${escapeHtml(connector.kind)}</span>`
+                                        )
+                                        .join("")}
+                                    </div>
+                                  </div>
+                                  <div>
+                                    <span class="detail-label">Regions</span>
+                                    <div class="library-badges">
+                                      ${
+                                        selectedLibraryPreview.regionIds.length > 0
+                                          ? selectedLibraryPreview.regionIds
+                                              .map((regionId) => `<span class="library-badge">${escapeHtml(regionId)}</span>`)
+                                              .join("")
+                                          : `<span class="library-badge">No authored regions</span>`
+                                      }
+                                    </div>
+                                  </div>
+                                  <div>
+                                    <span class="detail-label">Material Zones</span>
+                                    <div class="library-badges">
+                                      ${selectedLibraryPreview.materialZones
+                                        .map((zone) => `<span class="library-badge">${escapeHtml(zone)}</span>`)
+                                        .join("")}
+                                    </div>
+                                  </div>
+                                  <div>
+                                    <span class="detail-label">Suggested Placements</span>
+                                    <div class="library-badges">
+                                      ${
+                                        selectedLibraryPreview.suggestedPlacements.length > 0
+                                          ? selectedLibraryPreview.suggestedPlacements
+                                              .map((placement) => `<span class="library-badge">${escapeHtml(placement.label)}</span>` )
+                                              .join("")
+                                          : `<span class="library-badge">No compatible live targets</span>` 
+                                      }
+                                    </div>
+                                  </div>
+                                  <div>
+                                    <span class="detail-label">Placed Instances</span>
+                                    <div class="library-badges">
+                                      ${
+                                        selectedLibraryPreview.placedInstanceIds.length > 0
+                                          ? selectedLibraryPreview.placedInstanceIds
+                                              .map((instanceId) => `<span class="library-badge">${escapeHtml(instanceId)}</span>`)
+                                              .join("")
+                                          : `<span class="library-badge">Not placed</span>`
+                                      }
+                                    </div>
+                                  </div>
+                                  ${
+                                    selectedLibraryPreview.sourceAsset
+                                      ? `
+                                          <div>
+                                            <span class="detail-label">Source Asset</span>
+                                            <p class="path-note">${escapeHtml(selectedLibraryPreview.sourceAsset.path)} (${escapeHtml(selectedLibraryPreview.sourceAsset.format.toUpperCase())})</p>
+                                          </div>
+                                        `
+                                      : ""
+                                  }
+                                </div>
+                                ${
+                                  libraryAddActionHint
+                                    ? `<p class="path-note">${escapeHtml(libraryAddActionHint)}</p>`
+                                    : ""
+                                }
+                                <div class="inspector-actions">
+                                  <button class="library-preview-add" data-module-id="${escapeHtml(selectedLibraryPreview.moduleId)}" type="button">${escapeHtml(libraryAddActionLabel)}</button>
+                                  ${
+                                    primarySuggestedPlacementRequest
+                                      ? `<button class="library-preview-add-snap" data-module-id="${escapeHtml(primarySuggestedPlacementRequest.moduleId)}" data-local-connector="${escapeHtml(primarySuggestedPlacementRequest.localConnector)}" data-target-instance-id="${escapeHtml(primarySuggestedPlacementRequest.targetInstanceId)}" data-target-connector="${escapeHtml(primarySuggestedPlacementRequest.targetConnector)}" type="button">Recommended: ${escapeHtml(`Add and Snap to ${primarySuggestedPlacementRequest.targetInstanceId}::${primarySuggestedPlacementRequest.targetConnector}`)}</button>`
+                                      : ""
+                                  }
+                                  ${
+                                    suggestedPlacementAlternativeSummary
+                                      ? `<p class="path-note">${escapeHtml(suggestedPlacementAlternativeSummary.label)}</p>`
+                                      : ""
+                                  }
+                                  ${suggestedPlacementGroups
+                                    .map(
+                                      (group) => `
+                                        <div class="suggested-placement-group">
+                                          <span class="detail-label">${escapeHtml(group.localConnector)} | ${escapeHtml(group.localKind)}</span>
+                                          <div class="inspector-actions suggested-placement-actions">
+                                            ${group.actions
+                                              .map(
+                                                (action) => { const request = buildAddModuleAndSnapRequest(selectedLibraryPreview.moduleId, action); return `<button class="library-preview-add-snap secondary-button" data-module-id="${escapeHtml(request.moduleId)}" data-local-connector="${escapeHtml(request.localConnector)}" data-target-instance-id="${escapeHtml(request.targetInstanceId)}" data-target-connector="${escapeHtml(request.targetConnector)}" type="button">${escapeHtml(action.label)}</button>`; }
+                                              )
+                                              .join("")}
+                                          </div>
+                                        </div>
+                                      `
+                                    )
+                                    .join("")}
+                                  <button id="duplicate-library-module" class="secondary-button" type="button">Duplicate as Authored</button>
+                                  ${
+                                    selectedLibraryPreview.source === "authored"
+                                      ? [
+                                          `<button id="rename-library-module" class="secondary-button" type="button">Rename Authored Copy</button>`,
+                                          `<button id="delete-library-module" class="secondary-button" type="button">Delete Authored Copy</button>`
+                                        ].join("")
+                                      : ""
+                                  }
+                                  ${
+                                    reusableModuleDraft
+                                      ? ""
+                                      : `<button id="start-module-draft" class="secondary-button" type="button">Edit Metadata</button>`
+                                  }
+                                </div>
+                                ${
+                                  reusableModuleDraft
+                                    ? renderReusableModuleDraftEditor(reusableModuleDraft)
+                                    : `<p class="path-note">Start a reusable metadata draft to author connectors, regions, and material zones for this module.</p>`
+                                }
+                              </div>
+                            `
+                          : ""
+                      }
+                    </div>
+                  `
+                : `<p class="empty-note">Create or load a project first.</p>`
+            }
           </section>
           <section class="panel">
             <p class="eyebrow">Rig</p>
@@ -435,7 +765,7 @@ function render(): void {
                         .map(
                           (template) => `
                             <option value="${escapeHtml(template.id)}" ${
-                              template.id === rigDetail.templateId ? "selected" : ""
+                              template.id === resolveRigTemplateValue(rigDetail.templateId, pendingRigTemplatePreview) ? "selected" : ""
                             }>
                               ${escapeHtml(template.id)}
                             </option>
@@ -443,6 +773,11 @@ function render(): void {
                         )
                         .join("")}
                     </select>
+                    ${
+                      pendingRigTemplatePreview
+                        ? renderEditPreviewCard(pendingRigTemplatePreview)
+                        : ""
+                    }
                   </div>
                   <div class="inspector-block">
                     <h3>Socket Draft</h3>
@@ -462,8 +797,8 @@ function render(): void {
                     <h3>Current Sockets</h3>
                     <ul class="detail-list">
                       ${
-                        rigDetail.sockets.length > 0
-                          ? rigDetail.sockets
+                        visibleRigSockets.length > 0
+                          ? visibleRigSockets
                               .map(
                                 (socket) => `
                                   <li>
@@ -476,6 +811,11 @@ function render(): void {
                           : `<li><strong>No sockets</strong><span>Attach a socket to expose export metadata.</span></li>`
                       }
                     </ul>
+                    ${
+                      pendingSocketPreview
+                        ? renderEditPreviewCard(pendingSocketPreview)
+                        : ""
+                    }
                   </div>
                 `
                 : `<p class="empty-note">Rig metadata becomes available once a document is loaded.</p>`
@@ -559,6 +899,11 @@ function bindInputs(): void {
       state.savePath = (event.target as HTMLInputElement).value;
     });
   globalThis.document
+    .querySelector<HTMLInputElement>("#module-import-path")
+    ?.addEventListener("input", (event) => {
+      state.moduleImportPath = (event.target as HTMLInputElement).value;
+    });
+  globalThis.document
     .querySelector<HTMLInputElement>("#socket-name")
     ?.addEventListener("input", (event) => {
       state.socketName = (event.target as HTMLInputElement).value;
@@ -572,6 +917,26 @@ function bindInputs(): void {
     .querySelector<HTMLSelectElement>("#decal-draft")
     ?.addEventListener("change", (event) => {
       state.decalDraftId = (event.target as HTMLSelectElement).value;
+    });
+  globalThis.document
+    .querySelector<HTMLInputElement>("#module-draft-material-zones")
+    ?.addEventListener("input", (event) => {
+      state.reusableModuleMaterialZonesInput = (event.target as HTMLInputElement).value;
+    });
+  globalThis.document
+    .querySelector<HTMLInputElement>("#module-draft-region-id")
+    ?.addEventListener("input", (event) => {
+      state.reusableModuleRegionId = (event.target as HTMLInputElement).value;
+    });
+  globalThis.document
+    .querySelector<HTMLInputElement>("#module-draft-region-min")
+    ?.addEventListener("input", (event) => {
+      state.reusableModuleRegionMin = (event.target as HTMLInputElement).value;
+    });
+  globalThis.document
+    .querySelector<HTMLInputElement>("#module-draft-region-max")
+    ?.addEventListener("input", (event) => {
+      state.reusableModuleRegionMax = (event.target as HTMLInputElement).value;
     });
 }
 
@@ -601,20 +966,25 @@ function bindActions(): void {
     .querySelector<HTMLButtonElement>("#save-as")
     ?.addEventListener("click", saveProjectAs);
   globalThis.document
+    .querySelector<HTMLButtonElement>("#save-stylepack-as")
+    ?.addEventListener("click", saveStylePackAs);
+  globalThis.document
+    .querySelector<HTMLButtonElement>("#import-module")
+    ?.addEventListener("click", () => {
+      void importModuleContract();
+    });
+  globalThis.document
     .querySelector<HTMLButtonElement>("#undo")
     ?.addEventListener("click", undoLastAction);
+  globalThis.document
+    .querySelector<HTMLButtonElement>("#redo")
+    ?.addEventListener("click", redoLastAction);
   globalThis.document
     .querySelector<HTMLSelectElement>("#rig-template-select")
     ?.addEventListener("change", (event) => {
       const templateId = (event.target as HTMLSelectElement).value;
       if (templateId) {
-        void applyEditCommand(
-          {
-            op: "assign_rig_template",
-            templateId
-          },
-          `Assigned ${templateId}`
-        );
+        void previewRigTemplateAssignment(templateId);
       }
     });
   globalThis.document
@@ -635,15 +1005,102 @@ function bindActions(): void {
   globalThis.document.querySelectorAll<HTMLButtonElement>(".module-chip").forEach((element) =>
     element.addEventListener("click", () => {
       state.selectedModuleId = element.dataset.instanceId;
-      state.pendingMaterialPreview = undefined;
+      state.pendingEditPreview = undefined;
       render();
     })
   );
-  globalThis.document.querySelectorAll<HTMLButtonElement>(".library-add").forEach((element) =>
+  globalThis.document.querySelectorAll<HTMLButtonElement>(".library-card").forEach((element) =>
+    element.addEventListener("click", () => {
+      const moduleId = element.dataset.libraryModuleId;
+      if (moduleId && moduleId !== state.selectedLibraryModuleId) {
+        state.selectedLibraryModuleId = moduleId;
+        clearReusableModuleDraftState();
+        render();
+      }
+    })
+  );
+
+  globalThis.document
+    .querySelector<HTMLInputElement>("#library-search")
+    ?.addEventListener("input", (event) => {
+      const target = event.currentTarget as HTMLInputElement;
+      if (target.value !== state.librarySearch) {
+        state.librarySearch = target.value;
+        clearReusableModuleDraftState();
+        render();
+      }
+    });
+
+  globalThis.document.querySelectorAll<HTMLButtonElement>(".library-filter").forEach((element) =>
+    element.addEventListener("click", () => {
+      const nextFilter = element.dataset.libraryFilter as ModuleLibraryFilter | undefined;
+      if (!nextFilter || nextFilter === state.libraryFilter) {
+        return;
+      }
+
+      state.libraryFilter = nextFilter;
+      clearReusableModuleDraftState();
+      render();
+    })
+  );
+  globalThis.document.querySelectorAll<HTMLButtonElement>(".library-preview-add").forEach((element) =>
     element.addEventListener("click", () => {
       const moduleId = element.dataset.moduleId;
       if (moduleId) {
         void addModule(moduleId);
+      }
+    })
+  );
+  globalThis.document.querySelectorAll<HTMLButtonElement>(".library-preview-add-snap").forEach((element) =>
+    element.addEventListener("click", () => {
+      const moduleId = element.dataset.moduleId;
+      const localConnector = element.dataset.localConnector;
+      const targetInstanceId = element.dataset.targetInstanceId;
+      const targetConnector = element.dataset.targetConnector;
+      if (moduleId && localConnector && targetInstanceId && targetConnector) {
+        void addModuleAndSnap(moduleId, localConnector, targetInstanceId, targetConnector);
+      }
+    })
+  );
+  globalThis.document
+    .querySelector<HTMLButtonElement>("#duplicate-library-module")
+    ?.addEventListener("click", duplicateSelectedLibraryModule);
+  globalThis.document
+    .querySelector<HTMLButtonElement>("#rename-library-module")
+    ?.addEventListener("click", renameSelectedLibraryModule);
+  globalThis.document
+    .querySelector<HTMLButtonElement>("#delete-library-module")
+    ?.addEventListener("click", deleteSelectedLibraryModule);
+  globalThis.document
+    .querySelector<HTMLButtonElement>("#start-module-draft")
+    ?.addEventListener("click", startReusableModuleDraft);
+  globalThis.document
+    .querySelector<HTMLButtonElement>("#sync-module-material-zones")
+    ?.addEventListener("click", syncReusableModuleMaterialZones);
+  globalThis.document
+    .querySelector<HTMLButtonElement>("#add-module-region")
+    ?.addEventListener("click", addReusableModuleRegionFromDraft);
+  globalThis.document
+    .querySelector<HTMLButtonElement>("#apply-module-draft")
+    ?.addEventListener("click", () => {
+      void applyReusableModuleMetadataDraft();
+    });
+  globalThis.document
+    .querySelector<HTMLButtonElement>("#cancel-module-draft")
+    ?.addEventListener("click", cancelReusableModuleDraft);
+  globalThis.document.querySelectorAll<HTMLInputElement>(".module-draft-connector-id").forEach((element) =>
+    element.addEventListener("change", () => {
+      const connectorId = element.dataset.connectorId;
+      if (connectorId) {
+        updateReusableModuleConnectorDraft(connectorId, { id: element.value });
+      }
+    })
+  );
+  globalThis.document.querySelectorAll<HTMLInputElement>(".module-draft-connector-kind").forEach((element) =>
+    element.addEventListener("change", () => {
+      const connectorId = element.dataset.connectorId;
+      if (connectorId) {
+        updateReusableModuleConnectorDraft(connectorId, { kind: element.value });
       }
     })
   );
@@ -657,11 +1114,11 @@ function bindActions(): void {
     })
   );
   globalThis.document
-    .querySelector<HTMLButtonElement>("#apply-material-preview")
-    ?.addEventListener("click", applyPendingMaterialPreview);
+    .querySelector<HTMLButtonElement>("#apply-edit-preview")
+    ?.addEventListener("click", applyPendingEditPreview);
   globalThis.document
-    .querySelector<HTMLButtonElement>("#cancel-material-preview")
-    ?.addEventListener("click", cancelPendingMaterialPreview);
+    .querySelector<HTMLButtonElement>("#cancel-edit-preview")
+    ?.addEventListener("click", cancelPendingEditPreview);
   globalThis.document.querySelectorAll<HTMLSelectElement>(".paint-fill-select").forEach((element) =>
     element.addEventListener("change", () => {
       const zone = element.dataset.zone;
@@ -686,15 +1143,7 @@ function bindActions(): void {
       const instanceId = element.dataset.instanceId;
       const region = element.dataset.region;
       if (instanceId && region) {
-        void applyEditCommand(
-          {
-            op: "set_region_param",
-            instanceId,
-            region,
-            value: Number(element.value)
-          },
-          `Updated ${region}`
-        );
+        void previewRegionEdit(instanceId, region, Number(element.value));
       }
     })
   );
@@ -724,15 +1173,7 @@ function bindActions(): void {
       const nextTransform = [...current] as [number, number, number];
       nextTransform[axisIndex] = nextValue;
 
-      void applyEditCommand(
-        {
-          op: "set_transform",
-          instanceId,
-          field,
-          value: nextTransform
-        },
-        `Updated ${field}`
-      );
+      void previewTransformEdit(instanceId, field, nextTransform);
     })
   );
   globalThis.document.querySelectorAll<HTMLSelectElement>(".connector-select").forEach((element) =>
@@ -744,13 +1185,13 @@ function bindActions(): void {
       }
 
       if (!element.value) {
-        void clearConnectorAttachment(instanceId, localConnector);
+        void previewClearConnectorAttachment(instanceId, localConnector);
         return;
       }
 
       const [targetInstanceId, targetConnector] = element.value.split("::");
       if (targetInstanceId && targetConnector) {
-        void setConnectorAttachment(instanceId, localConnector, targetInstanceId, targetConnector);
+        void previewConnectorAttachment(instanceId, localConnector, targetInstanceId, targetConnector);
       }
     })
   );
@@ -776,7 +1217,10 @@ async function createFighter(): Promise<void> {
         stylePackPath: state.stylePackPath
       });
       syncLoadedDocumentPaths(state.document.paths);
+      state.authoredModuleIds = [];
       state.selectedModuleId = resolveSelectedModuleId(state.document);
+      state.selectedLibraryModuleId = resolveSelectedLibraryModuleId(buildModuleLibrary(state.document, state.authoredModuleIds));
+      clearReusableModuleDraftState();
       state.report = undefined;
       state.exportBundle = undefined;
       state.status = `Created ${state.document.project.id}`;
@@ -791,7 +1235,10 @@ async function loadCanonical(): Promise<void> {
     async () => {
       state.document = await invoke<DesktopDocument>("load_canonical_document_command");
       syncLoadedDocumentPaths(state.document.paths);
+      state.authoredModuleIds = [];
       state.selectedModuleId = resolveSelectedModuleId(state.document);
+      state.selectedLibraryModuleId = resolveSelectedLibraryModuleId(buildModuleLibrary(state.document, state.authoredModuleIds));
+      clearReusableModuleDraftState();
       state.report = undefined;
       state.exportBundle = undefined;
       state.status = `Loaded ${state.document.project.id}`;
@@ -809,10 +1256,41 @@ async function loadFromPaths(): Promise<void> {
         stylePackPath: state.stylePackPath
       });
       state.document.paths.savePath = state.savePath;
+      state.authoredModuleIds = [];
       state.selectedModuleId = resolveSelectedModuleId(state.document);
+      state.selectedLibraryModuleId = resolveSelectedLibraryModuleId(buildModuleLibrary(state.document, state.authoredModuleIds));
+      clearReusableModuleDraftState();
       state.report = undefined;
       state.exportBundle = undefined;
       state.status = `Loaded ${state.document.project.id}`;
+    },
+    { captureUndo: true }
+  );
+}
+
+async function importModuleContract(): Promise<void> {
+  if (!state.document) {
+    return;
+  }
+
+  await runAction(
+    "Importing module contract",
+    async () => {
+      const knownModuleIds = new Set(state.document!.stylePack.modules.map((module) => module.id));
+      state.document = await invoke<DesktopDocument>("import_module_contract_command", {
+        document: state.document,
+        importPath: state.moduleImportPath
+      });
+      const importedModuleId = state.document.stylePack.modules.find(
+        (module) => !knownModuleIds.has(module.id)
+      )?.id;
+      state.selectedLibraryModuleId = importedModuleId ?? state.selectedLibraryModuleId;
+      clearReusableModuleDraftState();
+      state.report = undefined;
+      state.exportBundle = undefined;
+      state.status = importedModuleId
+        ? `Imported ${importedModuleId}`
+        : "Imported module contract";
     },
     { captureUndo: true }
   );
@@ -895,22 +1373,67 @@ async function saveProjectAs(): Promise<void> {
   await saveCurrentProject();
 }
 
+async function saveStylePackAs(): Promise<void> {
+  if (!state.document) {
+    return;
+  }
+
+  const selection = await save({
+    defaultPath: suggestStylePackSavePath(state.document),
+    filters: [{ name: "Style Pack", extensions: ["json"] }]
+  });
+  const stylePackPath = resolveDialogPath(selection);
+  if (!stylePackPath) {
+    return;
+  }
+
+  state.stylePackPath = ensureStylePackSavePath(stylePackPath);
+  await runAction("Saving style pack", async () => {
+    await invoke<string>("save_style_pack_command", {
+      document: state.document,
+      stylePackPath: state.stylePackPath
+    });
+    state.document!.paths.stylePackPath = state.stylePackPath;
+    state.status = `Saved style pack ${state.stylePackPath}`;
+  });
+}
+
 async function attachSocket(): Promise<void> {
-  if (!state.socketName.trim() || !state.socketBone.trim()) {
+  if (!state.document) {
+    return;
+  }
+
+  const name = state.socketName.trim();
+  const bone = state.socketBone.trim();
+
+  if (!name || !bone) {
     state.error = "Socket name and bone are both required.";
     state.status = "Attach socket failed";
     render();
     return;
   }
 
-  await applyEditCommand(
-    {
-      op: "attach_socket",
-      name: state.socketName.trim(),
-      bone: state.socketBone.trim()
-    },
-    `Attached ${state.socketName.trim()}`
-  );
+  const command: Extract<EditCommand, { op: "attach_socket" }> = {
+    op: "attach_socket",
+    name,
+    bone
+  };
+
+  await runAction(`Previewing ${name}`, async () => {
+    const preview = await invoke<DesktopCommandPreview>("preview_edit_command_command", {
+      document: state.document,
+      command
+    });
+    state.pendingEditPreview = {
+      kind: "socket",
+      name,
+      bone,
+      successLabel: `Attached ${name}`,
+      command,
+      preview
+    };
+    state.status = `Previewed ${name}`;
+  });
 }
 
 async function snapConnector(
@@ -941,7 +1464,7 @@ async function snapConnector(
   );
 }
 
-async function setConnectorAttachment(
+async function previewConnectorAttachment(
   instanceId: string,
   localConnector: string,
   targetInstanceId: string,
@@ -951,25 +1474,34 @@ async function setConnectorAttachment(
     return;
   }
 
-  await runAction(
-    `Attached ${localConnector}`,
-    async () => {
-      state.document = await invoke<DesktopDocument>("set_connector_attachment_command", {
-        document: state.document,
-        instanceId,
-        localConnector,
-        targetInstanceId,
-        targetConnector
-      });
-      state.report = undefined;
-      state.exportBundle = undefined;
-      state.status = `Attached ${localConnector}`;
-    },
-    { captureUndo: true }
-  );
+  const command: Extract<EditCommand, { op: "set_connector_attachment" }> = {
+    op: "set_connector_attachment",
+    instanceId,
+    localConnector,
+    targetInstanceId,
+    targetConnector
+  };
+
+  await runAction(`Previewing ${localConnector}`, async () => {
+    const preview = await invoke<DesktopCommandPreview>("preview_edit_command_command", {
+      document: state.document,
+      command
+    });
+    state.pendingEditPreview = {
+      kind: "connector",
+      instanceId,
+      localConnector,
+      targetInstanceId,
+      targetConnector,
+      successLabel: `Attached ${localConnector}`,
+      command,
+      preview
+    };
+    state.status = `Previewed ${localConnector}`;
+  });
 }
 
-async function clearConnectorAttachment(
+async function previewClearConnectorAttachment(
   instanceId: string,
   localConnector: string
 ): Promise<void> {
@@ -977,20 +1509,27 @@ async function clearConnectorAttachment(
     return;
   }
 
-  await runAction(
-    `Cleared ${localConnector}`,
-    async () => {
-      state.document = await invoke<DesktopDocument>("clear_connector_attachment_command", {
-        document: state.document,
-        instanceId,
-        localConnector
-      });
-      state.report = undefined;
-      state.exportBundle = undefined;
-      state.status = `Cleared ${localConnector}`;
-    },
-    { captureUndo: true }
-  );
+  const command: Extract<EditCommand, { op: "clear_connector_attachment" }> = {
+    op: "clear_connector_attachment",
+    instanceId,
+    localConnector
+  };
+
+  await runAction(`Previewing ${localConnector}`, async () => {
+    const preview = await invoke<DesktopCommandPreview>("preview_edit_command_command", {
+      document: state.document,
+      command
+    });
+    state.pendingEditPreview = {
+      kind: "connector",
+      instanceId,
+      localConnector,
+      successLabel: `Cleared ${localConnector}`,
+      command,
+      preview
+    };
+    state.status = `Previewed ${localConnector}`;
+  });
 }
 
 async function runValidation(): Promise<void> {
@@ -1042,6 +1581,41 @@ async function addModule(moduleId: string): Promise<void> {
   );
 }
 
+
+async function addModuleAndSnap(
+  moduleId: string,
+  localConnector: string,
+  targetInstanceId: string,
+  targetConnector: string
+): Promise<void> {
+  if (!state.document) {
+    return;
+  }
+
+  await runAction(
+    `Added and snapped ${moduleId}`,
+    async () => {
+      const previousCount = state.document!.project.modules.length;
+      state.document = await invoke<DesktopDocument>("add_module_and_snap_command", {
+        document: state.document,
+        moduleId,
+        localConnector,
+        targetInstanceId,
+        targetConnector
+      });
+      const addedInstanceId = state.document.project.modules[previousCount]?.instanceId;
+      if (!addedInstanceId) {
+        throw new Error(`Unable to resolve new module instance for ${moduleId}.`);
+      }
+
+      state.selectedModuleId = addedInstanceId;
+      state.report = undefined;
+      state.exportBundle = undefined;
+      state.status = `Added and snapped ${moduleId}`;
+    },
+    { captureUndo: true }
+  );
+}
 async function removeSelectedModule(): Promise<void> {
   if (!state.document || !state.selectedModuleId) {
     return;
@@ -1197,10 +1771,12 @@ async function previewMaterialAssignment(
       document: state.document,
       command
     });
-    state.pendingMaterialPreview = {
+    state.pendingEditPreview = {
+      kind: "material",
       instanceId,
       zone,
       materialId,
+      successLabel: `Updated ${zone}`,
       command,
       preview
     };
@@ -1208,45 +1784,144 @@ async function previewMaterialAssignment(
   });
 }
 
-async function applyPendingMaterialPreview(): Promise<void> {
-  const pendingMaterialPreview = state.pendingMaterialPreview;
-  if (!pendingMaterialPreview) {
+async function previewRigTemplateAssignment(templateId: string): Promise<void> {
+  if (!state.document) {
     return;
   }
 
-  await applyEditCommand(pendingMaterialPreview.command, `Updated ${pendingMaterialPreview.zone}`);
-  state.pendingMaterialPreview = undefined;
+  const command: Extract<EditCommand, { op: "assign_rig_template" }> = {
+    op: "assign_rig_template",
+    templateId
+  };
+
+  await runAction(`Previewing ${templateId}`, async () => {
+    const preview = await invoke<DesktopCommandPreview>("preview_edit_command_command", {
+      document: state.document,
+      command
+    });
+    state.pendingEditPreview = {
+      kind: "rig_template",
+      templateId,
+      successLabel: `Assigned ${templateId}`,
+      command,
+      preview
+    };
+    state.status = `Previewed ${templateId}`;
+  });
+}
+async function previewRegionEdit(
+  instanceId: string,
+  region: string,
+  value: number
+): Promise<void> {
+  if (!state.document) {
+    return;
+  }
+
+  const command: Extract<EditCommand, { op: "set_region_param" }> = {
+    op: "set_region_param",
+    instanceId,
+    region,
+    value
+  };
+
+  await runAction(`Previewing ${region}`, async () => {
+    const preview = await invoke<DesktopCommandPreview>("preview_edit_command_command", {
+      document: state.document,
+      command
+    });
+    state.pendingEditPreview = {
+      kind: "region",
+      instanceId,
+      region,
+      value,
+      successLabel: `Updated ${region}`,
+      command,
+      preview
+    };
+    state.status = `Previewed ${region}`;
+  });
+}
+async function previewTransformEdit(
+  instanceId: string,
+  field: TransformField,
+  value: [number, number, number]
+): Promise<void> {
+  if (!state.document) {
+    return;
+  }
+
+  const command: Extract<EditCommand, { op: "set_transform" }> = {
+    op: "set_transform",
+    instanceId,
+    field,
+    value
+  };
+
+  await runAction(`Previewing ${field}`, async () => {
+    const preview = await invoke<DesktopCommandPreview>("preview_edit_command_command", {
+      document: state.document,
+      command
+    });
+    state.pendingEditPreview = {
+      kind: "transform",
+      instanceId,
+      field,
+      value,
+      successLabel: `Updated ${field}`,
+      command,
+      preview
+    };
+    state.status = `Previewed ${field}`;
+  });
+}
+
+async function applyPendingEditPreview(): Promise<void> {
+  const pendingEditPreview = state.pendingEditPreview;
+  if (!pendingEditPreview) {
+    return;
+  }
+
+  await applyEditCommand(pendingEditPreview.command, pendingEditPreview.successLabel);
+  state.pendingEditPreview = undefined;
   render();
 }
 
-function cancelPendingMaterialPreview(): void {
-  if (!state.pendingMaterialPreview) {
+function cancelPendingEditPreview(): void {
+  if (!state.pendingEditPreview) {
     return;
   }
 
-  state.pendingMaterialPreview = undefined;
-  state.status = "Canceled material preview";
+  state.pendingEditPreview = undefined;
+  state.status = "Canceled edit preview";
   state.error = undefined;
   render();
 }
 
 async function undoLastAction(): Promise<void> {
-  const snapshot = restoreUndoSnapshot(state.undoSnapshot);
-  if (!snapshot) {
+  const result = undoHistory(state.history, buildUndoSnapshot());
+  if (!result.snapshot) {
     return;
   }
 
-  state.projectId = snapshot.projectId;
-  state.projectPath = snapshot.projectPath;
-  state.stylePackPath = snapshot.stylePackPath;
-  state.savePath = snapshot.savePath;
-  state.selectedModuleId = snapshot.selectedModuleId;
-  state.document = snapshot.document;
-  state.report = snapshot.report;
-  state.exportBundle = snapshot.exportBundle;
-  state.undoSnapshot = undefined;
-  state.pendingMaterialPreview = undefined;
-  state.status = "Undid last action";
+  state.history = result.history;
+  restoreViewState(result.snapshot);
+  state.pendingEditPreview = undefined;
+  state.status = result.label ? `Undid ${result.label}` : "Undid last action";
+  state.error = undefined;
+  render();
+}
+
+async function redoLastAction(): Promise<void> {
+  const result = redoHistory(state.history, buildUndoSnapshot());
+  if (!result.snapshot) {
+    return;
+  }
+
+  state.history = result.history;
+  restoreViewState(result.snapshot);
+  state.pendingEditPreview = undefined;
+  state.status = result.label ? `Redid ${result.label.replace(/^Redo /, "")}` : "Redid last action";
   state.error = undefined;
   render();
 }
@@ -1256,16 +1931,16 @@ async function runAction(
   action: () => Promise<void>,
   options?: { captureUndo?: boolean }
 ): Promise<void> {
-  const undoSnapshot = options?.captureUndo ? captureUndoSnapshot(buildUndoSnapshot()) : undefined;
-  state.pendingMaterialPreview = undefined;
+  const historySnapshot = options?.captureUndo ? buildUndoSnapshot() : undefined;
+  state.pendingEditPreview = undefined;
   state.status = label;
   state.error = undefined;
   render();
 
   try {
     await action();
-    if (undoSnapshot) {
-      state.undoSnapshot = undoSnapshot;
+    if (historySnapshot) {
+      state.history = pushHistoryEntry(state.history, state.status, historySnapshot);
     }
   } catch (error) {
     state.status = `${label} failed`;
@@ -1288,31 +1963,470 @@ function buildUndoSnapshot(): DesktopUndoSnapshot {
     stylePackPath: state.stylePackPath,
     savePath: state.savePath,
     selectedModuleId: state.selectedModuleId,
+    selectedLibraryModuleId: state.selectedLibraryModuleId,
+    authoredModuleIds: [...state.authoredModuleIds],
+    moduleImportPath: state.moduleImportPath,
     document: state.document,
     report: state.report,
     exportBundle: state.exportBundle
   };
 }
 
-function resolveMaterialSelectionValue(
-  pendingMaterialPreview: PendingMaterialPreview | undefined,
-  zone: string,
-  materialId: string
-): string {
-  if (pendingMaterialPreview?.zone === zone) {
-    return pendingMaterialPreview.materialId;
-  }
-
-  return materialId;
+function restoreViewState(snapshot: DesktopUndoSnapshot): void {
+  state.projectId = snapshot.projectId;
+  state.projectPath = snapshot.projectPath;
+  state.stylePackPath = snapshot.stylePackPath;
+  state.savePath = snapshot.savePath;
+  state.selectedModuleId = snapshot.selectedModuleId;
+  state.selectedLibraryModuleId = snapshot.selectedLibraryModuleId;
+  state.authoredModuleIds = snapshot.authoredModuleIds ? [...snapshot.authoredModuleIds] : [];
+  state.moduleImportPath = snapshot.moduleImportPath ?? state.moduleImportPath;
+  state.document = snapshot.document;
+  state.report = snapshot.report;
+  state.exportBundle = snapshot.exportBundle;
+  clearReusableModuleDraftState();
 }
 
-function renderMaterialPreviewCard(pendingMaterialPreview: PendingMaterialPreview): string {
+function renderReusableModuleDraftEditor(draft: ReusableModuleDraft): string {
+  return `
+    <div class="module-draft-editor">
+      <div class="inspector-block">
+        <h3>Metadata Draft</h3>
+        <p class="path-note">Changes stay local until you apply this reusable module draft back into the style pack.</p>
+      </div>
+      <div class="inspector-block">
+        <h3>Connectors</h3>
+        <ul class="detail-list">
+          ${
+            draft.connectors.length > 0
+              ? draft.connectors
+                  .map(
+                    (connector) => `
+                      <li>
+                        <strong>${escapeHtml(connector.id)}</strong>
+                        <div class="module-draft-grid">
+                          <label>
+                            <span class="detail-label">Connector Id</span>
+                            <input
+                              class="module-draft-connector-id"
+                              data-connector-id="${escapeHtml(connector.id)}"
+                              value="${escapeHtml(connector.id)}"
+                            />
+                          </label>
+                          <label>
+                            <span class="detail-label">Connector Kind</span>
+                            <input
+                              class="module-draft-connector-kind"
+                              data-connector-id="${escapeHtml(connector.id)}"
+                              value="${escapeHtml(connector.kind)}"
+                            />
+                          </label>
+                        </div>
+                      </li>
+                    `
+                  )
+                  .join("")
+              : `<li><strong>No connectors</strong><span>Add connector metadata through the style pack source if this module needs new snap points.</span></li>`
+          }
+        </ul>
+      </div>
+      <div class="inspector-block">
+        <h3>Material Zones</h3>
+        <div class="module-draft-inline">
+          <input
+            id="module-draft-material-zones"
+            value="${escapeHtml(state.reusableModuleMaterialZonesInput)}"
+            placeholder="skin, trim, accent"
+          />
+          <button id="sync-module-material-zones" class="secondary-button" type="button">Sync Zones</button>
+        </div>
+      </div>
+      <div class="inspector-block">
+        <h3>Regions</h3>
+        <ul class="detail-list">
+          ${draft.regions
+            .map(
+              (region) => `
+                <li>
+                  <strong>${escapeHtml(region.id)}</strong>
+                  <span>${region.min.toFixed(2)} to ${region.max.toFixed(2)}</span>
+                </li>
+              `
+            )
+            .join("")}
+        </ul>
+        <div class="module-draft-grid">
+          <label>
+            <span class="detail-label">New Region Id</span>
+            <input id="module-draft-region-id" value="${escapeHtml(state.reusableModuleRegionId)}" />
+          </label>
+          <label>
+            <span class="detail-label">Min</span>
+            <input id="module-draft-region-min" type="number" step="0.01" value="${escapeHtml(state.reusableModuleRegionMin)}" />
+          </label>
+          <label>
+            <span class="detail-label">Max</span>
+            <input id="module-draft-region-max" type="number" step="0.01" value="${escapeHtml(state.reusableModuleRegionMax)}" />
+          </label>
+        </div>
+        <div class="inspector-actions">
+          <button id="add-module-region" class="secondary-button" type="button">Add Region</button>
+        </div>
+      </div>
+      <div class="inspector-actions">
+        <button id="apply-module-draft" type="button">Apply Metadata Draft</button>
+        <button id="cancel-module-draft" class="secondary-button" type="button">Cancel Draft</button>
+      </div>
+    </div>
+  `;
+}
+
+function duplicateSelectedLibraryModule(): void {
+  if (!state.document) {
+    return;
+  }
+
+  const moduleId = resolveSelectedLibraryModuleId(
+    buildModuleLibrary(state.document, state.authoredModuleIds),
+    state.selectedLibraryModuleId
+  );
+  if (!moduleId) {
+    return;
+  }
+
+  const suggestedModuleId = suggestDuplicateReusableModuleId(state.document, moduleId);
+  if (!suggestedModuleId) {
+    state.status = "Duplicate reusable module failed";
+    state.error = `Unable to suggest an authored id for reusable module ${moduleId}.`;
+    render();
+    return;
+  }
+
+  const requestedModuleId = globalThis.prompt?.("Duplicate reusable module as authored", suggestedModuleId);
+  if (requestedModuleId === undefined || requestedModuleId === null) {
+    return;
+  }
+
+  const duplicated = duplicateReusableModule(state.document, moduleId, requestedModuleId);
+  if (!duplicated) {
+    state.status = "Duplicate reusable module failed";
+    state.error = `Unable to duplicate reusable module ${moduleId}. Pick a non-empty id that does not already exist.`;
+    render();
+    return;
+  }
+
+  void runAction(
+    `Duplicated ${duplicated.duplicateId}`,
+    async () => {
+      state.document = duplicated.document;
+      state.selectedLibraryModuleId = duplicated.duplicateId;
+      state.authoredModuleIds = Array.from(
+        new Set([...state.authoredModuleIds, duplicated.duplicateId])
+      ).sort();
+      clearReusableModuleDraftState();
+      state.report = undefined;
+      state.exportBundle = undefined;
+      state.status = `Duplicated ${duplicated.duplicateId}`;
+    },
+    { captureUndo: true }
+  );
+}
+
+function renameSelectedLibraryModule(): void {
+  if (!state.document) {
+    return;
+  }
+
+  const moduleId = resolveSelectedLibraryModuleId(
+    buildModuleLibrary(state.document, state.authoredModuleIds),
+    state.selectedLibraryModuleId
+  );
+  if (!moduleId || !state.authoredModuleIds.includes(moduleId)) {
+    state.status = "Rename reusable module failed";
+    state.error = "Only authored reusable modules can be renamed in the current browser flow.";
+    render();
+    return;
+  }
+
+  const requestedModuleId = globalThis.prompt?.("Rename authored reusable module", moduleId);
+  if (requestedModuleId === undefined || requestedModuleId === null) {
+    return;
+  }
+
+  const renamed = renameReusableModule(state.document, moduleId, requestedModuleId);
+  if (!renamed) {
+    state.status = "Rename reusable module failed";
+    state.error = `Unable to rename reusable module ${moduleId}. Pick a non-empty id that does not already exist.`;
+    render();
+    return;
+  }
+
+  void runAction(
+    `Renamed ${moduleId} to ${renamed.renamedId}`,
+    async () => {
+      state.document = renamed.document;
+      state.selectedLibraryModuleId = renamed.renamedId;
+      state.authoredModuleIds = Array.from(
+        new Set(
+          state.authoredModuleIds.map((authoredModuleId) =>
+            authoredModuleId === moduleId ? renamed.renamedId : authoredModuleId
+          )
+        )
+      ).sort();
+      clearReusableModuleDraftState();
+      state.report = undefined;
+      state.exportBundle = undefined;
+      state.status = `Renamed ${moduleId} to ${renamed.renamedId}`;
+    },
+    { captureUndo: true }
+  );
+}
+
+function deleteSelectedLibraryModule(): void {
+  if (!state.document) {
+    return;
+  }
+
+  const moduleId = resolveSelectedLibraryModuleId(
+    buildModuleLibrary(state.document, state.authoredModuleIds),
+    state.selectedLibraryModuleId
+  );
+  if (!moduleId || !state.authoredModuleIds.includes(moduleId)) {
+    state.status = "Delete reusable module failed";
+    state.error = "Only authored reusable modules can be deleted in the current browser flow.";
+    render();
+    return;
+  }
+
+  if (globalThis.confirm && !globalThis.confirm(`Delete authored reusable module ${moduleId}?`)) {
+    return;
+  }
+
+  const deleted = deleteReusableModule(state.document, moduleId);
+  if (!deleted) {
+    state.status = "Delete reusable module failed";
+    state.error = `Unable to delete reusable module ${moduleId}.`;
+    render();
+    return;
+  }
+
+  void runAction(
+    `Deleted ${moduleId}`,
+    async () => {
+      state.document = deleted.document;
+      state.authoredModuleIds = state.authoredModuleIds.filter((authoredModuleId) => authoredModuleId !== moduleId);
+      state.selectedLibraryModuleId = resolveSelectedLibraryModuleId(
+        buildModuleLibrary(deleted.document, state.authoredModuleIds),
+        state.selectedLibraryModuleId === moduleId ? undefined : state.selectedLibraryModuleId
+      );
+      state.selectedModuleId = resolveSelectedModuleId(deleted.document, state.selectedModuleId);
+      clearReusableModuleDraftState();
+      state.report = undefined;
+      state.exportBundle = undefined;
+      state.status = deleted.removedInstanceIds.length > 0
+        ? `Deleted ${moduleId} and pruned ${deleted.removedInstanceIds.length} placed instance${deleted.removedInstanceIds.length === 1 ? "" : "s"}`
+        : `Deleted ${moduleId}`;
+    },
+    { captureUndo: true }
+  );
+}
+
+function startReusableModuleDraft(): void {
+  if (!state.document) {
+    return;
+  }
+
+  const moduleId = resolveSelectedLibraryModuleId(buildModuleLibrary(state.document, state.authoredModuleIds), state.selectedLibraryModuleId);
+  if (!moduleId) {
+    return;
+  }
+
+  state.selectedLibraryModuleId = moduleId;
+  const draft = createReusableModuleDraft(state.document, moduleId);
+  if (!draft) {
+    state.status = "Reusable module draft failed";
+    state.error = `Unable to open reusable module ${state.selectedLibraryModuleId}.`;
+    render();
+    return;
+  }
+
+  state.reusableModuleDraft = draft;
+  syncReusableModuleDraftInputs(draft);
+  state.status = `Editing ${draft.id}`;
+  state.error = undefined;
+  render();
+}
+
+function cancelReusableModuleDraft(): void {
+  clearReusableModuleDraftState();
+  state.status = "Canceled reusable module draft";
+  state.error = undefined;
+  render();
+}
+
+function syncReusableModuleDraftInputs(draft?: ReusableModuleDraft): void {
+  state.reusableModuleMaterialZonesInput = draft ? draft.materialZones.join(", ") : "";
+  state.reusableModuleRegionId = "";
+  state.reusableModuleRegionMin = "";
+  state.reusableModuleRegionMax = "";
+}
+
+function clearReusableModuleDraftState(): void {
+  state.reusableModuleDraft = undefined;
+  syncReusableModuleDraftInputs();
+}
+
+function updateReusableModuleConnectorDraft(
+  connectorId: string,
+  patch: { id?: string; kind?: string }
+): void {
+  if (!state.reusableModuleDraft) {
+    return;
+  }
+
+  const nextId = patch.id?.trim();
+  const nextKind = patch.kind?.trim();
+  if ((patch.id !== undefined && !nextId) || (patch.kind !== undefined && !nextKind)) {
+    state.status = "Reusable module draft failed";
+    state.error = "Connector id and kind are both required.";
+    render();
+    return;
+  }
+
+  if (
+    nextId &&
+    state.reusableModuleDraft.connectors.some(
+      (connector) => connector.id === nextId && connector.id !== connectorId
+    )
+  ) {
+    state.status = "Reusable module draft failed";
+    state.error = `Connector ${nextId} already exists on this reusable module.`;
+    render();
+    return;
+  }
+
+  state.reusableModuleDraft = updateReusableModuleDraftConnector(state.reusableModuleDraft, connectorId, {
+    id: nextId,
+    kind: nextKind
+  });
+  state.status = `Updated ${connectorId}`;
+  state.error = undefined;
+  render();
+}
+
+function syncReusableModuleMaterialZones(): void {
+  if (!state.reusableModuleDraft) {
+    return;
+  }
+
+  const materialZones = parseReusableModuleMaterialZones(state.reusableModuleMaterialZonesInput);
+  if (materialZones.length === 0) {
+    state.status = "Reusable module draft failed";
+    state.error = "At least one material zone is required.";
+    render();
+    return;
+  }
+
+  state.reusableModuleDraft = setReusableModuleDraftMaterialZones(
+    state.reusableModuleDraft,
+    materialZones
+  );
+  state.reusableModuleMaterialZonesInput = materialZones.join(", ");
+  state.status = `Updated ${state.reusableModuleDraft.id} zones`;
+  state.error = undefined;
+  render();
+}
+
+function addReusableModuleRegionFromDraft(): void {
+  if (!state.reusableModuleDraft) {
+    return;
+  }
+
+  const result = validateReusableModuleRegionDraft(
+    state.reusableModuleRegionId,
+    state.reusableModuleRegionMin,
+    state.reusableModuleRegionMax
+  );
+  if (!result.ok) {
+    state.status = "Reusable module draft failed";
+    state.error = result.error;
+    render();
+    return;
+  }
+
+  if (state.reusableModuleDraft.regions.some((region) => region.id === result.region.id)) {
+    state.status = "Reusable module draft failed";
+    state.error = `Region ${result.region.id} already exists on this reusable module.`;
+    render();
+    return;
+  }
+
+  state.reusableModuleDraft = addReusableModuleDraftRegion(state.reusableModuleDraft, result.region);
+  state.reusableModuleRegionId = "";
+  state.reusableModuleRegionMin = "";
+  state.reusableModuleRegionMax = "";
+  state.status = `Added ${result.region.id}`;
+  state.error = undefined;
+  render();
+}
+
+async function applyReusableModuleMetadataDraft(): Promise<void> {
+  if (!state.document || !state.reusableModuleDraft) {
+    return;
+  }
+
+  const draft = state.reusableModuleDraft;
+  await runAction(
+    `Updated reusable module ${draft.id}`,
+    async () => {
+      state.document = applyReusableModuleDraft(state.document!, draft);
+      if (!draft.sourceAsset) {
+        state.authoredModuleIds = Array.from(new Set([...state.authoredModuleIds, draft.id])).sort();
+      } else {
+        state.authoredModuleIds = state.authoredModuleIds.filter((moduleId) => moduleId !== draft.id);
+      }
+      state.report = undefined;
+      state.exportBundle = undefined;
+      clearReusableModuleDraftState();
+      state.status = `Updated reusable module ${draft.id}`;
+    },
+    { captureUndo: true }
+  );
+}
+
+function renderEditPreviewCard(pendingPreview: PendingEditPreview): string {
   return `
     <div class="preview-card">
-      <p class="detail-label">Pending Material Preview</p>
-      <strong>${escapeHtml(pendingMaterialPreview.zone)} -> ${escapeHtml(pendingMaterialPreview.materialId)}</strong>
+      <p class="detail-label">${escapeHtml(
+        pendingPreview.kind === "material"
+          ? "Pending Material Preview"
+          : pendingPreview.kind === "region"
+            ? "Pending Region Preview"
+            : pendingPreview.kind === "rig_template"
+              ? "Pending Rig Template Preview"
+              : pendingPreview.kind === "connector"
+                ? "Pending Connector Preview"
+                : pendingPreview.kind === "socket"
+                  ? "Pending Socket Preview"
+                  : "Pending Transform Preview"
+      )}</p>
+      <strong>${escapeHtml(
+        pendingPreview.kind === "material"
+          ? `${pendingPreview.zone} -> ${pendingPreview.materialId}`
+          : pendingPreview.kind === "region"
+            ? `${pendingPreview.region} -> ${pendingPreview.value.toFixed(2)}`
+            : pendingPreview.kind === "rig_template"
+              ? `template -> ${pendingPreview.templateId}`
+              : pendingPreview.kind === "connector"
+                ? pendingPreview.targetInstanceId && pendingPreview.targetConnector
+                  ? `${pendingPreview.localConnector} -> ${pendingPreview.targetInstanceId}::${pendingPreview.targetConnector}`
+                  : `${pendingPreview.localConnector} -> unattached`
+                : pendingPreview.kind === "socket"
+                  ? `${pendingPreview.name} -> ${pendingPreview.bone}`
+                  : `${pendingPreview.field} -> ${formatVec3(pendingPreview.value)}`
+      )}</strong>
       <ul class="detail-list">
-        ${pendingMaterialPreview.preview.diff.changes
+        ${pendingPreview.preview.diff.changes
           .map(
             (change) => `
               <li>
@@ -1326,13 +2440,62 @@ function renderMaterialPreviewCard(pendingMaterialPreview: PendingMaterialPrevie
           .join("")}
       </ul>
       <div class="inspector-actions">
-        <button id="apply-material-preview" type="button">Apply</button>
-        <button id="cancel-material-preview" class="secondary-button" type="button">Cancel</button>
+        <button id="apply-edit-preview" type="button">Apply</button>
+        <button id="cancel-edit-preview" class="secondary-button" type="button">Cancel</button>
       </div>
     </div>
   `;
 }
 
+function renderSelectedModuleValidationInspector(
+  validationDetail: ReturnType<typeof buildSelectedModuleValidationDetail>
+): string {
+  if (!validationDetail) {
+    return "";
+  }
+
+  return `
+    <div class="inspector-block">
+      <h3>Validation for This Module</h3>
+      <p class="path-note">${escapeHtml(String(validationDetail.issues.length))} module issues, ${escapeHtml(String(validationDetail.projectIssues.length))} project-level issues still affect export readiness.</p>
+      <ul class="validation-list">
+        ${validationDetail.issues.length > 0
+          ? validationDetail.issues
+              .map(
+                (issue) => `
+                  <li class="validation-item validation-item-${escapeHtml(issue.severity.toLowerCase())}">
+                    <strong>${escapeHtml(issue.code)}</strong>
+                    <span>${escapeHtml(issue.summary)}</span>
+                    ${issue.suggestedFix ? `<span class="validation-fix">Suggested fix: ${escapeHtml(issue.suggestedFix)}</span>` : ""}
+                  </li>
+                `
+              )
+              .join("")
+          : `<li class="validation-item validation-item-ok"><strong>No module-specific issues</strong><span>This module is clear in the current report.</span></li>`}
+      </ul>
+      ${validationDetail.projectIssues.length > 0
+        ? `
+            <div class="validation-summary">
+              <span class="detail-label">Project-Level Blockers</span>
+              <ul class="validation-list">
+                ${validationDetail.projectIssues
+                  .map(
+                    (issue) => `
+                      <li class="validation-item validation-item-${escapeHtml(issue.severity.toLowerCase())}">
+                        <strong>${escapeHtml(issue.code)}</strong>
+                        <span>${escapeHtml(issue.summary)}</span>
+                        ${issue.suggestedFix ? `<span class="validation-fix">Suggested fix: ${escapeHtml(issue.suggestedFix)}</span>` : ""}
+                      </li>
+                    `
+                  )
+                  .join("")}
+              </ul>
+            </div>
+          `
+        : ""}
+    </div>
+  `;
+}
 function renderPaintInspector(
   instanceId: string,
   paint: NonNullable<ReturnType<typeof buildSelectedModuleDetail>>["paint"],
@@ -1418,6 +2581,7 @@ function renderTransformInputs(
   field: TransformField,
   label: string,
   vector: [number, number, number],
+  pendingPreview: PendingEditPreview | undefined,
   step: string,
   min?: string
 ): string {
@@ -1440,7 +2604,7 @@ function renderTransformInputs(
                   data-instance-id="${escapeHtml(instanceId)}"
                   data-field="${field}"
                   data-axis="${axis}"
-                  value="${vector[index]}"
+                  value="${resolveTransformInputValue(instanceId, field, axis, vector[index], pendingPreview)}"
                 />
               </label>
             `;
@@ -1483,6 +2647,17 @@ function formatVec3(vector: [number, number, number]): string {
   return vector.map((value) => value.toFixed(2)).join(", ");
 }
 
+function resolveSelectedLibraryModuleId(
+  library: ModuleLibraryEntry[],
+  selectedLibraryModuleId?: string
+): string | undefined {
+  if (selectedLibraryModuleId && library.some((entry) => entry.moduleId === selectedLibraryModuleId)) {
+    return selectedLibraryModuleId;
+  }
+
+  return library[0]?.moduleId;
+}
+
 function formatPreviewValue(value: DesktopCommandPreview["diff"]["changes"][number]["before"]): string {
   switch (value.kind) {
     case "vector3":
@@ -1497,6 +2672,14 @@ function formatPreviewValue(value: DesktopCommandPreview["diff"]["changes"][numb
 }
 
 render();
+
+
+
+
+
+
+
+
 
 
 

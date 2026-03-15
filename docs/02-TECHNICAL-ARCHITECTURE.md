@@ -421,6 +421,19 @@ Paint sits on top of material zones:
 - optional brush layer
 - future weathering layer
 
+## 11.5 Blender handoff material and UV boundary
+
+The current reusable-module import contract is intentionally metadata-first:
+- Blender owns topology authoring, UV unwrap and UV edits, and the exported source `.glb`
+- PolyBash owns the import contract (`.moduleimport.json` or descriptor-style `.module.json`), reusable connector and region metadata, declared material zones, assembly, validation, and downstream export
+
+For the current M2 slice, imported-module validation asserts:
+- `sourceAsset.format` is `glb`
+- the referenced `sourceAsset.path` exists
+- `materialZones` are present, non-empty, and unique
+
+The current validator does not deeply inspect UV layouts or mesh contents. That remains a Blender-owned boundary and a documentation-plus-fixture contract rather than a mesh-analysis feature, and it is the intended M2 scope boundary rather than a temporary partial implementation.
+
 ## 12. LLM command DSL
 
 LLM assistance must target a safe DSL.

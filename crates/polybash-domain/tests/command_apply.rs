@@ -199,3 +199,67 @@ fn valid_command_fixture_previews_and_applies_across_project_state() {
         .iter()
         .any(|socket| socket.name == "weapon_r" && socket.bone == "hand_r")));
 }
+
+#[test]
+fn set_connector_attachment_preview_returns_diff_metadata() {
+    let project = parse_project_str(include_str!(
+        "../../../fixtures/projects/valid/fighter_basic.zxmodel.json"
+    ))
+    .expect("project fixture");
+    let stylepack = parse_stylepack_str(include_str!(
+        "../../../fixtures/stylepacks/valid/zx_fighter_v1.stylepack.json"
+    ))
+    .expect("style pack fixture");
+    let commands = parse_commands_str(
+        r#"[{"op":"set_connector_attachment","instanceId":"arm_l_01","localConnector":"hand_socket_l","targetInstanceId":"weapon_01","targetConnector":"grip"}]"#,
+    )
+    .expect("command should parse");
+
+    let preview =
+        preview_command_with_diff(&project, &stylepack, &commands[0]).expect("preview should work");
+
+    assert_eq!(preview.diff.op, "set_connector_attachment");
+    assert_eq!(preview.diff.target, "arm_l_01");
+    assert_eq!(preview.diff.changes.len(), 1);
+    assert_eq!(
+        preview.diff.changes[0].path,
+        "modules.arm_l_01.connector_attachments.hand_socket_l"
+    );
+    assert_eq!(preview.diff.changes[0].before, PreviewValue::Missing);
+    assert_eq!(
+        preview.diff.changes[0].after,
+        PreviewValue::Text("weapon_01::grip".to_string())
+    );
+}
+
+#[test]
+fn clear_connector_attachment_preview_returns_missing_diff_metadata() {
+    let project = parse_project_str(include_str!(
+        "../../../fixtures/projects/valid/fighter_basic.zxmodel.json"
+    ))
+    .expect("project fixture");
+    let stylepack = parse_stylepack_str(include_str!(
+        "../../../fixtures/stylepacks/valid/zx_fighter_v1.stylepack.json"
+    ))
+    .expect("style pack fixture");
+    let commands = parse_commands_str(
+        r#"[{"op":"clear_connector_attachment","instanceId":"torso_01","localConnector":"neck"}]"#,
+    )
+    .expect("command should parse");
+
+    let preview =
+        preview_command_with_diff(&project, &stylepack, &commands[0]).expect("preview should work");
+
+    assert_eq!(preview.diff.op, "clear_connector_attachment");
+    assert_eq!(preview.diff.target, "torso_01");
+    assert_eq!(preview.diff.changes.len(), 1);
+    assert_eq!(
+        preview.diff.changes[0].path,
+        "modules.torso_01.connector_attachments.neck"
+    );
+    assert_eq!(
+        preview.diff.changes[0].before,
+        PreviewValue::Text("head_01::neck_socket".to_string())
+    );
+    assert_eq!(preview.diff.changes[0].after, PreviewValue::Missing);
+}

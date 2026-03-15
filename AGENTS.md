@@ -128,6 +128,24 @@ When blocked:
 - keep the repository buildable
 - leave a clear gap report rather than half-finished code
 
+## Unattended run rules
+
+If the user asks for an unattended, overnight, autonomous, or long-running product run:
+
+1. Optimize for **validated backlog closure**, not local polish.
+2. Work in waves with parallel lanes whenever file ownership can be separated.
+3. Keep at least one active lane on the biggest remaining blocker whenever feasible.
+4. Do not spend repeated waves refining the same task family unless that work is clearly closing the task.
+5. If two landed slices hit the same task id without closing it, either close it next or switch lanes and explain why in the status docs.
+6. If work does not close a task, materially move acceptance, or unblock a larger lane, it is lower-priority than blocker work.
+7. Browser or shell polish is never the default choice while larger viewport, import, validation, workflow, or acceptance blockers remain open.
+8. Keep trunk green, but do not mistake "green" for "high-value."
+
+For unattended runs, the preferred order is:
+- close the biggest acceptance blocker
+- close the next biggest blocker
+- only then take thin refinement slices
+
 ## Required output in task summaries
 
 Every task summary should include:

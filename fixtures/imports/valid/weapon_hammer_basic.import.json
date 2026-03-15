@@ -1,0 +1,26 @@
+{
+  "version": 1,
+  "id": "weapon_hammer_basic",
+  "assetType": "weapon",
+  "sourceAsset": {
+    "path": "../source/weapon_hammer_basic.glb",
+    "format": "glb"
+  },
+  "connectors": [
+    {
+      "id": "grip",
+      "kind": "weapon_grip"
+    }
+  ],
+  "regions": [
+    {
+      "id": "hammer_head_scale",
+      "min": -0.1,
+      "max": 0.2
+    }
+  ],
+  "materialZones": [
+    "head",
+    "handle"
+  ]
+}

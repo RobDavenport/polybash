@@ -1,0 +1,25 @@
+{
+  "id": "fighter_shoulder_guard_bad_format_a",
+  "assetType": "character",
+  "sourceAsset": {
+    "path": "fixtures/imports/valid/fighter_shoulder_guard_a.glb",
+    "format": "fbx"
+  },
+  "connectors": [
+    {
+      "id": "shoulder_plug",
+      "kind": "arm_plug"
+    }
+  ],
+  "regions": [
+    {
+      "id": "flare_width",
+      "min": -0.08,
+      "max": 0.12
+    }
+  ],
+  "materialZones": [
+    "primary",
+    "trim"
+  ]
+}

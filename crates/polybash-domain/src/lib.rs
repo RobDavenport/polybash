@@ -1,7 +1,7 @@
 use polybash_contracts::{
     EditCommand, ModuleInstance, Project, RigAssignment, SocketBinding, StylePack, TransformField,
 };
-use polybash_ops::clamp_region;
+use polybash_ops::{clamp_region, connector_is_compatible};
 use thiserror::Error;
 
 #[derive(Debug, Clone, PartialEq)]
@@ -40,6 +40,13 @@ pub enum DomainError {
     MissingModule(String),
     #[error("region not found: {0}")]
     MissingRegion(String),
+    #[error("connector not found: {0}")]
+    MissingConnector(String),
+    #[error("connector kinds are incompatible: {left_kind} -> {right_kind}")]
+    IncompatibleConnectorKinds {
+        left_kind: String,
+        right_kind: String,
+    },
     #[error("scale components must be greater than zero")]
     InvalidScale,
 }
@@ -151,6 +158,70 @@ pub fn apply_command(
                 })
             }
         },
+        EditCommand::SetConnectorAttachment {
+            instance_id,
+            local_connector,
+            target_instance_id,
+            target_connector,
+        } => {
+            let source_index = project
+                .modules
+                .iter()
+                .position(|instance| instance.instance_id == *instance_id)
+                .ok_or_else(|| DomainError::MissingInstance(instance_id.clone()))?;
+            let target_instance = project
+                .modules
+                .iter()
+                .find(|instance| instance.instance_id == *target_instance_id)
+                .ok_or_else(|| DomainError::MissingInstance(target_instance_id.clone()))?;
+            let source_module_id = project.modules[source_index].module_id.clone();
+            let source_descriptor = style_pack
+                .module(&source_module_id)
+                .ok_or_else(|| DomainError::MissingModule(source_module_id.clone()))?;
+            let target_module_id = target_instance.module_id.clone();
+            let target_descriptor = style_pack
+                .module(&target_module_id)
+                .ok_or_else(|| DomainError::MissingModule(target_module_id.clone()))?;
+            let local_descriptor = source_descriptor
+                .connector(local_connector)
+                .ok_or_else(|| DomainError::MissingConnector(local_connector.clone()))?;
+            let target_descriptor_connector = target_descriptor
+                .connector(target_connector)
+                .ok_or_else(|| DomainError::MissingConnector(target_connector.clone()))?;
+
+            if !connector_is_compatible(
+                style_pack,
+                &local_descriptor.kind,
+                &target_descriptor_connector.kind,
+            ) {
+                return Err(DomainError::IncompatibleConnectorKinds {
+                    left_kind: local_descriptor.kind.clone(),
+                    right_kind: target_descriptor_connector.kind.clone(),
+                });
+            }
+
+            let instance = &mut project.modules[source_index];
+            instance
+                .connector_attachments
+                .retain(|attachment| attachment.local_connector != *local_connector);
+            instance
+                .connector_attachments
+                .push(polybash_contracts::ConnectorAttachment {
+                    local_connector: local_connector.clone(),
+                    target_instance_id: target_instance_id.clone(),
+                    target_connector: target_connector.clone(),
+                });
+        }
+        EditCommand::ClearConnectorAttachment {
+            instance_id,
+            local_connector,
+        } => {
+            let instance = instance_mut(project, instance_id)
+                .ok_or_else(|| DomainError::MissingInstance(instance_id.clone()))?;
+            instance
+                .connector_attachments
+                .retain(|attachment| attachment.local_connector != *local_connector);
+        }
         EditCommand::AttachSocket { name, bone } => {
             let rig = project.rig.get_or_insert_with(|| RigAssignment {
                 template_id: String::new(),
@@ -164,6 +235,20 @@ pub fn apply_command(
     }
 
     Ok(())
+}
+
+fn attachment_value(instance: &ModuleInstance, local_connector: &str) -> PreviewValue {
+    instance
+        .connector_attachments
+        .iter()
+        .find(|attachment| attachment.local_connector == local_connector)
+        .map(|attachment| {
+            PreviewValue::Text(format!(
+                "{}::{}",
+                attachment.target_instance_id, attachment.target_connector
+            ))
+        })
+        .unwrap_or(PreviewValue::Missing)
 }
 
 fn transform_value(instance: &ModuleInstance, field: &TransformField) -> PreviewValue {
@@ -284,6 +369,45 @@ fn build_command_diff(
                     .unwrap_or(PreviewValue::Missing),
             }],
         }),
+        EditCommand::SetConnectorAttachment {
+            instance_id,
+            local_connector,
+            ..
+        } => {
+            let before_instance = instance(before, instance_id)
+                .ok_or_else(|| DomainError::MissingInstance(instance_id.clone()))?;
+            let after_instance = instance(after, instance_id)
+                .ok_or_else(|| DomainError::MissingInstance(instance_id.clone()))?;
+
+            Ok(CommandDiff {
+                op: "set_connector_attachment".to_string(),
+                target: instance_id.clone(),
+                changes: vec![CommandChange {
+                    path: format!("modules.{instance_id}.connector_attachments.{local_connector}"),
+                    before: attachment_value(before_instance, local_connector),
+                    after: attachment_value(after_instance, local_connector),
+                }],
+            })
+        }
+        EditCommand::ClearConnectorAttachment {
+            instance_id,
+            local_connector,
+        } => {
+            let before_instance = instance(before, instance_id)
+                .ok_or_else(|| DomainError::MissingInstance(instance_id.clone()))?;
+            let after_instance = instance(after, instance_id)
+                .ok_or_else(|| DomainError::MissingInstance(instance_id.clone()))?;
+
+            Ok(CommandDiff {
+                op: "clear_connector_attachment".to_string(),
+                target: instance_id.clone(),
+                changes: vec![CommandChange {
+                    path: format!("modules.{instance_id}.connector_attachments.{local_connector}"),
+                    before: attachment_value(before_instance, local_connector),
+                    after: attachment_value(after_instance, local_connector),
+                }],
+            })
+        }
         EditCommand::AttachSocket { name, .. } => Ok(CommandDiff {
             op: "attach_socket".to_string(),
             target: name.clone(),

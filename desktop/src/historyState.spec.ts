@@ -1,5 +1,6 @@
 import { describe, expect, it } from "vitest";
 import {
+  buildVisibleHistoryEntries,
   captureUndoSnapshot,
   createHistoryState,
   pushHistoryEntry,
@@ -190,5 +191,23 @@ describe("historyState", () => {
 
     redone.snapshot!.document!.project.id = "mutated_after_redo";
     expect(afterMove.document?.project.id).toBe("fighter_after_move");
+  });
+
+  it("builds visible history entries with undo items first and normalized redo labels", () => {
+    const history = createHistoryState();
+    const beforeCreate = buildSnapshot();
+    const afterCreate = buildSnapshot();
+    afterCreate.projectId = "fighter_after_create";
+    const afterMove = buildSnapshot();
+    afterMove.projectId = "fighter_after_move";
+
+    const seeded = pushHistoryEntry(history, "Created fighter", beforeCreate);
+    const withMove = pushHistoryEntry(seeded, "Moved torso", afterCreate);
+    const undone = undoHistory(withMove, afterMove);
+
+    expect(buildVisibleHistoryEntries(undone.history)).toEqual([
+      { label: "Created fighter", direction: "undo" },
+      { label: "Moved torso", direction: "redo" }
+    ]);
   });
 });

@@ -1,7 +1,13 @@
 import type { DesktopHistoryEntry, DesktopHistoryState, DesktopUndoSnapshot } from "./types";
 
 const DEFAULT_HISTORY_LIMIT = 12;
+const DEFAULT_VISIBLE_HISTORY_LIMIT = 6;
 const REDO_PREFIX = "Redo ";
+
+export type VisibleHistoryEntry = {
+  label: string;
+  direction: "undo" | "redo";
+};
 
 export function captureUndoSnapshot(current: DesktopUndoSnapshot): DesktopUndoSnapshot {
   return structuredClone(current);
@@ -81,6 +87,24 @@ export function redoHistory(
     snapshot: restoreUndoSnapshot(next.snapshot),
     label: next.label
   };
+}
+
+export function buildVisibleHistoryEntries(
+  history: DesktopHistoryState,
+  limit = DEFAULT_VISIBLE_HISTORY_LIMIT
+): VisibleHistoryEntry[] {
+  const undoEntries = history.past.slice(-limit).reverse().map((entry) => ({
+    label: entry.label,
+    direction: "undo" as const
+  }));
+  const redoEntries = history.future
+    .slice(0, Math.max(limit - undoEntries.length, 0))
+    .map((entry) => ({
+      label: fromRedoLabel(entry.label),
+      direction: "redo" as const
+    }));
+
+  return [...undoEntries, ...redoEntries];
 }
 
 function buildEntry(label: string, snapshot: DesktopUndoSnapshot): DesktopHistoryEntry {

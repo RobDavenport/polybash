@@ -614,3 +614,1294 @@ Current product direction:
   - preview/apply UX is still narrow and only covers material assignment
   - the visible desktop UI still exposes undo only; redo remains helper/model-level
   - rotate-focused direct manipulation, richer snap UX, and manual desktop smoke remain open
+
+## 2026-03-13 - Desktop History UX and Viewport Affordance Wave
+
+- Prompt alignment:
+  - `codex/prompts/10-LAUNCH-UNATTENDED-PRODUCT-RUN.md`
+  - wave group A priorities `T-20`, `T-21`, and `T-22`
+- Task ids completed or materially advanced:
+  - completed: `T-20`
+  - advanced: `T-21`
+  - advanced: `T-22`
+- Worker/orchestration notes:
+  - the initial worker wave stalled twice without landing code in owned scopes
+  - the orchestrator relanded the wave locally after the stalled workers were interrupted so the unattended loop could keep the baseline moving
+- Acceptance criteria targeted:
+  - visible undo and redo controls plus recent action history in the desktop shell
+  - visible viewport orientation and transform-affordance overlays for the selected module
+  - visible connector markers and snap-guide lines in the viewport for the selected module
+- Failing tests added first:
+  - expanded `desktop/src/historyState.spec.ts`
+  - expanded `desktop/src/desktopAcceptance.spec.ts`
+  - expanded `desktop/src/sceneProjection.spec.ts`
+- Implementation changes:
+  - added `buildVisibleHistoryEntries` in `desktop/src/historyState.ts`
+  - rewired `desktop/src/main.ts` from the old single-snapshot undo path onto the bounded history model with surfaced Undo and Redo buttons plus a recent action list
+  - added a history panel in the desktop sidebar and matching shell styling in `desktop/src/styles.css`
+  - extended `desktop/src/sceneProjection.ts` with deterministic orientation-widget, transform-guide, connector-marker, and snap-guide metadata for the selected module
+  - rendered those orientation, transform, connector, and snap overlays in `desktop/src/viewportController.ts` while preserving the existing command-backed drag/scale/rotate commit path
+- Validation commands run:
+  - `corepack pnpm --dir desktop typecheck`
+  - `corepack pnpm --dir desktop test`
+  - `corepack pnpm --dir desktop build`
+  - `cargo test --manifest-path desktop/src-tauri/Cargo.toml`
+- Results:
+  - desktop frontend suite is green at 6 Vitest files / 35 tests
+  - desktop build is green
+  - desktop Tauri Rust tests are green
+  - the visible shell now has undo, redo, and action-history affordances, and the viewport exposes orientation plus connector/snap visibility instead of keeping that state fully hidden
+- Remaining gaps and assumptions:
+  - the viewport still relies on drag plus modifier keys for actual transform interaction even though the guides are now visible
+  - connector and snap overlays are informative, but the richer viewport-first snap workflow is still not implemented
+  - preview/apply UX is still narrow and centered on material assignment
+
+## 2026-03-13 - Module Preview Browser Wave
+
+- Prompt alignment:
+  - `codex/prompts/10-LAUNCH-UNATTENDED-PRODUCT-RUN.md`
+  - wave group A priority `T-19`
+- Task ids completed or materially advanced:
+  - advanced: `T-19`
+- Acceptance criteria targeted:
+  - make style-pack modules understandable before placement
+  - expose a dedicated selection-first browser surface rather than only add buttons in a flat list
+  - keep placement one click away once the user has inspected connector, region, and material metadata
+- Failing tests added first:
+  - expanded `desktop/src/documentInspector.spec.ts`
+  - expanded `desktop/src/desktopAcceptance.spec.ts`
+- Implementation changes:
+  - added `buildModuleLibraryPreview` in `desktop/src/documentInspector.ts` with deterministic silhouette, connector, region, material-zone, and placement-hint metadata
+  - upgraded the desktop shell module panel into a selection-first browser in `desktop/src/main.ts`
+  - added a dedicated preview card with abstract silhouette bars, connector badges, region badges, material-zone badges, and an explicit add-from-preview action
+  - added supporting module-browser styling in `desktop/src/styles.css`
+- Validation commands run:
+  - `corepack pnpm --dir desktop typecheck`
+  - `corepack pnpm --dir desktop test`
+  - `corepack pnpm --dir desktop build`
+  - `cargo test --manifest-path desktop/src-tauri/Cargo.toml`
+- Results:
+  - desktop frontend suite is green at 6 Vitest files / 37 tests
+  - desktop build is green
+  - desktop Tauri Rust tests are green
+  - module placement is now preview-first instead of trial-and-error from a flat list
+- Remaining gaps and assumptions:
+  - the browser preview is still deterministic metadata plus abstract silhouette bars, not richer rendered thumbnails or live rotating previews
+  - viewport-first snap workflow, interactive gizmos, and broader preview/apply UI are still open
+
+## 2026-03-13 - Reusable Module Draft Helper Slice
+
+- Prompt alignment:
+  - `codex/prompts/10-LAUNCH-UNATTENDED-PRODUCT-RUN.md`
+  - first dependency-correct `T-23` prerequisite slice before `T-24`
+- Task ids completed or materially advanced:
+  - advanced: `T-23`
+- Acceptance and workflow targets:
+  - introduce a deterministic reusable module draft model for connector, region, and material-zone metadata
+  - make authored metadata round-trip cleanly back into style-pack module records
+  - keep the slice narrow and testable before wiring a larger desktop authoring UI around it
+- Failing tests added first:
+  - `desktop/src/moduleDraft.spec.ts`
+- Implementation changes:
+  - added `desktop/src/moduleDraft.ts` with `createReusableModuleDraft`, `updateReusableModuleDraftConnector`, `addReusableModuleDraftRegion`, `setReusableModuleDraftMaterialZones`, and `applyReusableModuleDraft`
+  - added reusable-module draft tests that prove descriptor metadata can be edited and persisted back into style-pack module records in memory
+- Validation commands run:
+  - `corepack pnpm --dir desktop typecheck`
+  - `corepack pnpm --dir desktop test`
+  - `corepack pnpm --dir desktop build`
+  - `cargo test --manifest-path desktop/src-tauri/Cargo.toml`
+- Results:
+  - desktop frontend suite is green at 7 Vitest files / 39 tests
+  - desktop build is green
+  - desktop Tauri Rust tests are green
+  - the codebase now has a tested reusable module metadata-draft seam for the next authoring or import wave
+- Remaining gaps and assumptions:
+  - this slice is not yet surfaced in the desktop shell, so `T-23` is advanced rather than complete
+  - style-pack save flow and Blender import flow are still open and remain the next likely pipeline blockers
+
+## 2026-03-13 - Reusable Module Metadata Draft UI Wave
+
+- Prompt alignment:
+  - `codex/prompts/10-LAUNCH-UNATTENDED-PRODUCT-RUN.md`
+  - wave group A dependency follow-through on `T-23`
+- Task ids completed or materially advanced:
+  - completed: `T-23`
+- Acceptance and workflow targets:
+  - surface connector, region, and material-zone metadata authoring in the desktop module browser
+  - keep reusable module authoring local to the existing style-pack records rather than inventing a save/import pipeline early
+  - preserve bounded-history safety while making the module browser a real authoring surface
+- Failing tests added first:
+  - `desktop/src/moduleDraftForm.spec.ts`
+  - expanded `desktop/src/desktopAcceptance.spec.ts`
+- Implementation changes:
+  - added `desktop/src/moduleDraftForm.ts` with reusable material-zone parsing and reusable region-draft validation helpers
+  - surfaced `Edit Metadata` in the module browser preview inside `desktop/src/main.ts`
+  - added a reusable-module draft editor for connector id/kind updates, material-zone syncing, region creation, and apply/cancel flow
+  - applied reusable draft edits back into in-memory style-pack module records and refreshed the browser preview after apply
+  - added supporting module-draft editor styling in `desktop/src/styles.css`
+  - fixed the browser connector badge separator corruption in `desktop/src/main.ts`
+- Validation commands run:
+  - `corepack pnpm --dir desktop typecheck`
+  - `corepack pnpm --dir desktop test`
+  - `corepack pnpm --dir desktop build`
+  - `cargo test --manifest-path desktop/src-tauri/Cargo.toml`
+- Results:
+  - desktop frontend suite is green at 8 Vitest files / 43 tests
+  - desktop build is green
+  - desktop Tauri Rust tests are green
+  - `T-23` now has a visible desktop authoring flow instead of only an internal helper seam
+- Remaining gaps and assumptions:
+  - reusable metadata authoring currently persists only inside the loaded in-memory style-pack document model; there is still no save/reload workflow for authored reusable modules
+  - Blender-authored module import and the broader content pipeline remain open under `T-24`
+  - the material and UV boundary with Blender still needs the explicit contract and fixture pass queued in `T-26`
+## 2026-03-13 - Imported Module Contract Wave
+
+- Prompt alignment:
+  - `codex/prompts/10-LAUNCH-UNATTENDED-PRODUCT-RUN.md`
+  - dependency-correct `T-24` slice after reusable module authoring
+- Task ids completed or materially advanced:
+  - advanced: `T-24`
+- Acceptance and workflow targets:
+  - import one canonical Blender-authored reusable module contract into the desktop shell without manual JSON edits
+  - preserve source-asset metadata through the shared contracts, desktop browser preview, and reusable-module draft path
+  - keep the import bridge narrow by accepting descriptor-style `.module.json` fixtures and contract-style `.moduleimport.json` fixtures through one desktop command surface
+- Failing tests added first:
+  - `crates/polybash-contracts/tests/imported_module_contract.rs`
+  - `crates/polybash-contracts/tests/module_import_contract.rs`
+  - `crates/polybash-contracts/tests/module_descriptor_roundtrip.rs`
+  - expanded `desktop/src/documentInspector.spec.ts`
+  - expanded `desktop/src/moduleDraft.spec.ts`
+  - expanded `desktop/src-tauri/src/lib.rs`
+- Implementation changes:
+  - extended `crates/polybash-contracts/src/lib.rs` with imported-module contract parsing plus tolerant `sourceAsset` deserialization for legacy string and object forms
+  - preserved imported `sourceAsset` metadata through `desktop/src/types.ts`, `desktop/src/documentInspector.ts`, and `desktop/src/moduleDraft.ts`
+  - fixed the desktop Tauri command registration mismatch so `desktop/src/main.ts` and `desktop/src-tauri/src/main.rs` both use `import_module_contract_command`
+  - added canonical import fixtures under `fixtures/imports/` for valid and invalid contract flows
+  - validated that imported modules can be previewed, placed, validated, and exported from the desktop shell without hand-editing the project JSON
+- Validation commands run:
+  - `corepack pnpm --dir desktop typecheck`
+  - `corepack pnpm --dir desktop test`
+  - `corepack pnpm --dir desktop build`
+  - `cargo test -p polybash-contracts`
+  - `cargo test --manifest-path desktop/src-tauri/Cargo.toml`
+- Results:
+  - desktop frontend suite was green with the import flow landed and source-asset preview coverage added
+  - desktop Tauri Rust tests were green with imported-module add, validate, export, and rejection coverage
+  - shared contracts tests now cover imported module contracts, legacy module-import contracts, and descriptor-style imported module fixtures
+- Remaining gaps and assumptions:
+  - Blender handoff documentation and the fuller production content-pipeline guidance were still thinner than the task ideal at the close of this wave
+  - import support is currently centered on canonical GLB-backed fixtures and deterministic metadata, not a broader asset-pipeline UI yet
+
+## 2026-03-13 - Style Pack Save/Reload Slice
+
+- Prompt alignment:
+  - `codex/prompts/10-LAUNCH-UNATTENDED-PRODUCT-RUN.md`
+  - first persistence-correct `T-25` slice after the landed import flow
+- Task ids completed or materially advanced:
+  - advanced: `T-25`
+- Acceptance and workflow targets:
+  - let users persist edited reusable style-pack content instead of keeping imported or authored module metadata only in memory
+  - keep the save/reload slice narrow by using the existing style-pack path field and module browser rather than inventing a full library manager prematurely
+- Failing tests added first:
+  - expanded `desktop/src/documentPaths.spec.ts`
+  - expanded `desktop/src-tauri/src/lib.rs`
+  - repaired `crates/polybash-contracts/tests/imported_module_contract.rs`
+  - repaired `crates/polybash-contracts/tests/module_import_contract.rs`
+  - repaired `crates/polybash-contracts/tests/module_descriptor_roundtrip.rs`
+- Implementation changes:
+  - added `ensureStylePackSavePath` and `suggestStylePackSavePath` in `desktop/src/documentPaths.ts`
+  - surfaced `Save Style Pack As` in `desktop/src/main.ts`
+  - added `save_style_pack` plus `save_style_pack_command` in `desktop/src-tauri/src/lib.rs` and registered the command in `desktop/src-tauri/src/main.rs`
+  - added desktop Rust coverage proving saved style packs reload imported modules and authored reusable-module metadata cleanly
+  - hardened shared-contract fixture tests to resolve import fixtures through `env!("CARGO_MANIFEST_DIR")` so the full workspace lane stays green on Windows
+- Validation commands run:
+  - `corepack pnpm --dir desktop typecheck`
+  - `corepack pnpm --dir desktop test`
+  - `corepack pnpm --dir desktop build`
+  - `cargo test --manifest-path desktop/src-tauri/Cargo.toml`
+  - `cargo fmt --check`
+  - `cargo test --workspace`
+- Results:
+  - desktop frontend suite is green at 8 Vitest files / 48 tests
+  - desktop Tauri Rust tests are green at 31 tests
+  - the full Rust workspace is green after the shared-contract import-fixture tests were hardened
+  - users can now save imported or authored reusable-module changes into a style-pack JSON and reload that saved library into the desktop shell
+- Remaining gaps and assumptions:
+  - this is still a thin persistence slice, not a fuller reusable-library management surface with rename, delete, packaging, or richer browsing controls
+  - richer rendered thumbnails and a broader content-pipeline UX are still open follow-on work after the save/reload baseline
+
+## 2026-03-13 - Blender Handoff and Style-Pack Save Reconciliation
+
+- Prompt alignment:
+  - `codex/prompts/10-LAUNCH-UNATTENDED-PRODUCT-RUN.md`
+  - wave follow-through on `T-24` with `T-25` save/reload reconciliation
+- Task ids completed or materially advanced:
+  - completed: `T-24`
+  - advanced: `T-25`
+- Acceptance and workflow targets:
+  - verify the existing Blender handoff contract path rather than leaving `T-24` understated in docs
+  - keep validation strict by aligning imported fixtures to the active style-pack connector taxonomy
+  - reflect the already-landed style-pack save/reload surface honestly in repo-facing docs
+- Failing tests added first:
+  - `crates/polybash-contracts/tests/imported_module_contract.rs`
+  - expanded `desktop/src/documentInspector.spec.ts`
+  - existing desktop Tauri import/save tests surfaced a failing imported-module fixture during validation
+- Implementation changes:
+  - added explicit contract parse coverage for the canonical imported-module handoff fixture in `crates/polybash-contracts/tests/imported_module_contract.rs`
+  - extended `desktop/src/documentInspector.spec.ts` so module-browser previews assert imported `sourceAsset` metadata
+  - corrected `fixtures/imports/valid/prop_crate_round_a.moduleimport.json` and `fixtures/imports/invalid/prop_crate_bad.moduleimport.json` so the canonical prop-crate handoff fixture respects the active style-pack connector taxonomy instead of weakening validation
+  - reconciled `README.md`, `codex/STATUS.md`, `codex/ACCEPTANCE_SUMMARY.md`, and `codex/GAP_REPORT.md` with the already-landed desktop shell/backend support for `Import Module Contract`, imported source-asset preview, and `Save Style Pack As`
+- Validation commands run:
+  - `cargo test -p polybash-contracts`
+  - `corepack pnpm --dir desktop test`
+  - `corepack pnpm --dir desktop typecheck`
+  - `corepack pnpm --dir desktop build`
+  - `cargo test --manifest-path desktop/src-tauri/Cargo.toml`
+- Results:
+  - contract coverage is green for imported module descriptors and `.import.json` handoff fixtures
+  - desktop frontend validation is green at 8 Vitest files / 48 tests
+  - desktop Tauri Rust tests are green at 31 tests, including import, placement, validation, export, and style-pack save/reload evidence for imported modules
+  - the repo-facing docs now stop claiming Blender import and style-pack save are absent when those flows are already present
+- Remaining gaps and assumptions:
+  - the current handoff pipeline validates referenced `.glb` paths plus metadata seams, but it still does not deeply inspect mesh contents, pivots, or UV ownership expectations
+  - `T-25` is only advanced because the repo still lacks multi-style-pack management, locked base packs, and copy-on-write override workflows
+  - `T-26` remains open for the explicit Blender-owned UV/material contract and its validator-fixture pass
+## 2026-03-13 - Imported Material-Zone Contract Guard
+
+- Prompt alignment:
+  - `codex/prompts/10-LAUNCH-UNATTENDED-PRODUCT-RUN.md`
+  - thin `T-26` dependency guard after import and save/reload landed
+- Task ids completed or materially advanced:
+  - advanced: `T-26`
+- Acceptance and workflow targets:
+  - make the current Blender-owned material/UV stance explicit in import validation instead of leaving it as an unpinned implementation detail
+  - keep the slice narrow by validating declared material zones rather than inventing a new UV authoring model inside PolyBash
+- Failing tests added first:
+  - expanded `desktop/src-tauri/src/lib.rs`
+  - added `fixtures/imports/invalid/prop_crate_no_materials.moduleimport.json`
+- Implementation changes:
+  - added an invalid imported-module fixture with no declared material zones
+  - added desktop Rust coverage proving imported module contracts fail explicitly when the current handoff contract omits material-zone metadata
+  - kept the existing GLB-backed Blender handoff stance while leaving deeper UV inspection and documentation for the broader `T-26` follow-on
+- Validation commands run:
+  - `cargo test --manifest-path desktop/src-tauri/Cargo.toml`
+  - `cargo fmt --check`
+  - `cargo test --workspace`
+- Results:
+  - desktop Tauri Rust tests are green at 32 tests
+  - full Rust workspace is green with the additional invalid imported-module fixture coverage
+- Remaining gaps and assumptions:
+  - the broader Blender-owned UV contract is still documentation- and pipeline-level guidance rather than a mesh-inspection validator
+  - imported-module validation now proves material-zone presence, but richer texture/UV pipeline rules remain open
+
+## 2026-03-13 - Blender-Owned UV Contract Guard Follow-Through
+
+- Prompt alignment:
+  - `codex/prompts/10-LAUNCH-UNATTENDED-PRODUCT-RUN.md`
+  - narrow `T-26` follow-through after the save/reload checkpoint
+- Task ids completed or materially advanced:
+  - advanced: `T-26`
+- Acceptance and workflow targets:
+  - make the Blender-owned UV and material-zone boundary explicit in the source-of-truth docs
+  - add one more regression fixture so imported modules fail when they declare blank material-zone ids rather than only missing or duplicate zones
+- Failing tests added first:
+  - expanded `desktop/src-tauri/src/lib.rs`
+- Implementation changes:
+  - added `fixtures/imports/invalid/prop_crate_blank_zone.moduleimport.json`
+  - added desktop Rust coverage proving imported module contracts fail explicitly when a declared material zone is blank or whitespace-only
+  - updated `docs/02-TECHNICAL-ARCHITECTURE.md` and `docs/05-ACCEPTANCE-TEST-MATRIX.md` so the current Blender-owned UV boundary and material-zone contract are explicit in the repo source of truth
+  - reconciled `README.md`, `codex/GAP_REPORT.md`, and `codex/ACCEPTANCE_SUMMARY.md` with the stronger material-zone contract wording
+- Validation commands run:
+  - `cargo test --manifest-path desktop/src-tauri/Cargo.toml imported_module_contract_with_blank_material_zone_is_rejected`
+  - `cargo test --manifest-path desktop/src-tauri/Cargo.toml`
+  - `cargo fmt --check`
+- Results:
+  - desktop Tauri Rust tests are green at 34 tests
+  - formatting is green
+  - the written architecture and acceptance docs now match the implemented Blender-owned UV/material contract more closely
+- Remaining gaps and assumptions:
+  - deeper mesh, pivot, and UV inspection still remain out of scope for this narrow slice
+  - the current contract continues to validate the metadata seam around imported `.glb` assets rather than turning PolyBash into a UV-analysis tool
+
+## 2026-03-13 - Descriptor Import Contract Guard
+
+- Prompt alignment:
+  - `codex/prompts/10-LAUNCH-UNATTENDED-PRODUCT-RUN.md`
+  - narrow `T-26` follow-through on descriptor-style import fallback coverage
+- Task ids completed or materially advanced:
+  - advanced: `T-26`
+- Acceptance and workflow targets:
+  - prove that descriptor-style `.module.json` imports honor the same material-zone contract as versioned `.moduleimport.json` imports
+  - keep the slice on desktop command dispatch instead of adding a parallel validator path
+- Failing tests added first:
+  - expanded `desktop/src-tauri/src/lib.rs`
+- Implementation changes:
+  - added `fixtures/imports/invalid/fighter_shoulder_guard_blank_zone.module.json`
+  - added desktop Rust coverage that drives `import_module_contract_command` with a descriptor-style import and asserts blank material zones fail explicitly
+  - updated `docs/05-ACCEPTANCE-TEST-MATRIX.md`, `codex/ACCEPTANCE_SUMMARY.md`, and `codex/GAP_REPORT.md` so the fallback `.module.json` path is reflected in the current contract evidence
+- Validation commands run:
+  - `cargo test --manifest-path desktop/src-tauri/Cargo.toml descriptor_style_import_with_blank_material_zone_is_rejected_through_command_dispatch`
+  - `cargo test --manifest-path desktop/src-tauri/Cargo.toml`
+  - `cargo fmt --check`
+- Results:
+  - desktop Tauri Rust tests are green at 35 tests
+  - formatting is green
+  - the repo now has explicit evidence that both supported import file shapes share the same material-zone guard
+- Remaining gaps and assumptions:
+  - the import contract is still metadata-first and does not inspect UV topology or deeper mesh content
+  - broader Blender handoff guidance and richer reusable-library management remain the next meaningful lanes
+
+## 2026-03-13 - Imported Material-Zone Contract Hardening
+
+- Prompt alignment:
+  - `codex/prompts/10-LAUNCH-UNATTENDED-PRODUCT-RUN.md`
+  - narrow `T-26` validator follow-through after the style-pack save/reload slice
+- Task ids completed or materially advanced:
+  - advanced: `T-26`
+- Acceptance and workflow targets:
+  - keep the Blender-owned UV boundary intact while tightening the imported reusable-module material-zone contract
+  - reject blank or duplicate imported material-zone ids instead of accepting ambiguous metadata into the saved style-pack pipeline
+- Failing tests added first:
+  - expanded `desktop/src-tauri/src/lib.rs`
+  - added `fixtures/imports/invalid/prop_crate_duplicate_materials.moduleimport.json`
+  - added `fixtures/imports/invalid/prop_crate_blank_zone.moduleimport.json`
+- Implementation changes:
+  - extended imported-module validation so `materialZones` must be present, non-empty, and unique
+  - added desktop Rust coverage for duplicate and blank material-zone rejection, including command-dispatch coverage through the import command path
+  - kept the current `.glb`-backed metadata seam intact rather than expanding into deeper mesh or UV inspection
+- Validation commands run:
+  - `cargo test --manifest-path desktop/src-tauri/Cargo.toml imported_module_contract_with_duplicate_material_zones_is_rejected -- --nocapture`
+  - `cargo fmt`
+  - `cargo fmt --check`
+  - `cargo test --workspace`
+- Results:
+  - desktop Tauri Rust tests are green at 35 tests
+  - full Rust workspace is green after the additional invalid imported-module fixtures landed
+  - the imported-module contract now rejects missing, duplicate, and blank material-zone declarations before those modules can enter saved style-pack content
+- Remaining gaps and assumptions:
+  - deeper mesh, pivot, and UV inspection remain out of scope for this thin contract-hardening slice
+  - the broader Blender-owned UV/material boundary is still enforced mostly by contract docs and metadata validation, not by source-asset geometry inspection
+
+## 2026-03-13 - Blender Handoff Contract Doc
+
+- Prompt alignment:
+  - `codex/prompts/10-LAUNCH-UNATTENDED-PRODUCT-RUN.md`
+  - narrow documentation follow-through on `T-26`
+- Task ids completed or materially advanced:
+  - advanced: `T-26`
+- Acceptance and workflow targets:
+  - replace scattered status-only guidance with one repo-visible handoff-contract document
+  - make the supported import shapes, ownership boundary, and current validator guarantees discoverable without reading the ledger
+- Failing tests added first:
+  - none; docs-only follow-through on already-green contract evidence
+- Implementation changes:
+  - added `docs/09-BLENDER-HANDOFF-CONTRACT.md`
+  - linked the new handoff doc from `README.md`
+  - refined `codex/GAP_REPORT.md` so it reflects that a focused handoff-contract doc now exists even though broader pipeline guidance remains partial
+- Validation commands run:
+  - none; docs-only pass after the prior green baseline
+- Results:
+  - the current `.glb` plus metadata handoff seam is now documented in one place instead of being spread across status entries
+- Remaining gaps and assumptions:
+  - the document still describes a metadata-first import boundary, not deep mesh, pivot, or UV inspection
+
+## 2026-03-13 - Descriptor Import Fixture Breadth
+
+- Prompt alignment:
+  - `codex/prompts/10-LAUNCH-UNATTENDED-PRODUCT-RUN.md`
+  - narrow `T-26` follow-through on invalid descriptor-style fixture breadth
+- Task ids completed or materially advanced:
+  - advanced: `T-26`
+- Acceptance and workflow targets:
+  - prove that descriptor-style `.module.json` imports reject the same missing, duplicate, and blank material-zone cases as versioned `.moduleimport.json` imports
+  - keep the work inside the existing desktop command-dispatch seam instead of branching the validator surface
+- Failing tests added first:
+  - expanded `desktop/src-tauri/src/lib.rs`
+- Implementation changes:
+  - added `fixtures/imports/invalid/fighter_shoulder_guard_no_materials.module.json`
+  - added `fixtures/imports/invalid/fighter_shoulder_guard_duplicate_materials.module.json`
+  - extended desktop Rust command-dispatch coverage so descriptor-style imports now have explicit missing, duplicate, and blank material-zone regression tests
+  - updated `docs/09-BLENDER-HANDOFF-CONTRACT.md` and `codex/ACCEPTANCE_SUMMARY.md` so the broader descriptor-style invalid fixture matrix is visible in the repo docs
+- Validation commands run:
+  - `cargo test --manifest-path desktop/src-tauri/Cargo.toml descriptor_style_import`
+  - `cargo test --manifest-path desktop/src-tauri/Cargo.toml`
+  - `cargo fmt --check`
+  - `cargo test --workspace`
+- Results:
+  - desktop Tauri Rust tests are green at 37 tests
+  - full Rust workspace is green
+  - both supported import file shapes now have explicit negative-fixture coverage for missing, duplicate, and blank material zones
+- Remaining gaps and assumptions:
+  - import validation is still metadata-first and does not inspect deeper source-asset geometry or UV topology
+  - richer Blender handoff docs and reusable-library management remain open after this fixture-breadth pass
+
+## 2026-03-13 - Positive Descriptor Import Coverage
+
+- Prompt alignment:
+  - `codex/prompts/10-LAUNCH-UNATTENDED-PRODUCT-RUN.md`
+  - narrow `T-24` and `T-26` follow-through on positive descriptor-style import evidence
+- Task ids completed or materially advanced:
+  - advanced: `T-24`
+  - advanced: `T-26`
+- Acceptance and workflow targets:
+  - prove that the supported descriptor-style `.module.json` path is not only parseable and rejectable, but also importable, placeable, validatable, and exportable through the desktop command seam
+- Failing tests added first:
+  - expanded `desktop/src-tauri/src/lib.rs`
+- Implementation changes:
+  - added desktop Rust coverage for `fixtures/imports/valid/fighter_shoulder_guard_a.module.json` through `import_module_contract_command`, `add_module_instance`, validation, and export
+  - updated `docs/09-BLENDER-HANDOFF-CONTRACT.md` and `codex/ACCEPTANCE_SUMMARY.md` so both supported import shapes are described as having positive end-to-end evidence, not just parser and negative-fixture coverage
+- Validation commands run:
+  - `cargo test --manifest-path desktop/src-tauri/Cargo.toml descriptor_style_module_can_be_placed_validated_and_exported_through_command_dispatch`
+  - `cargo test --manifest-path desktop/src-tauri/Cargo.toml`
+  - `cargo fmt --check`
+  - `cargo test --workspace`
+- Results:
+  - desktop Tauri Rust tests are green at 38 tests
+  - full Rust workspace is green
+  - both `.moduleimport.json` and `.module.json` now have positive desktop-side import, placement, validation, and export evidence
+- Remaining gaps and assumptions:
+  - the contract remains metadata-first and still avoids deep mesh, pivot, and UV inspection
+  - broader reusable-library management and richer Blender handoff guidance remain the next likely unattended lanes
+
+## 2026-03-13 - Module Browser Library Filters
+
+- Prompt alignment:
+  - `codex/prompts/10-LAUNCH-UNATTENDED-PRODUCT-RUN.md`
+  - thin `T-25` follow-through on reusable-library management in the desktop shell
+- Task ids completed or materially advanced:
+  - advanced: `T-25`
+- Acceptance and workflow targets:
+  - make imported reusable modules visibly manageable in the desktop browser instead of leaving them mixed into one flat library grid
+  - keep the slice on the tested projection layer first, then surface it in the shell UI without inventing a new persistence model
+- Failing tests added first:
+  - expanded `desktop/src/documentInspector.spec.ts`
+  - expanded `desktop/src/desktopAcceptance.spec.ts`
+- Implementation changes:
+  - added library-source classification plus summary and filter helpers in `desktop/src/documentInspector.ts`
+  - surfaced imported-versus-style-pack filter chips and source badges in the module browser inside `desktop/src/main.ts`
+  - added supporting browser-management styling in `desktop/src/styles.css`
+- Validation commands run:
+  - `corepack pnpm --dir desktop typecheck`
+  - `corepack pnpm --dir desktop test`
+  - `corepack pnpm --dir desktop build`
+  - `cargo test --manifest-path desktop/src-tauri/Cargo.toml`
+- Results:
+  - desktop frontend is green at 8 Vitest files / 49 tests
+  - desktop build is green
+  - desktop Tauri Rust tests remain green at 38 tests
+  - imported reusable modules can now be isolated in the browser instead of only existing as mixed library entries after import/save
+- Remaining gaps and assumptions:
+  - this is still a thin management slice, not a full reusable-library organizer with rename, delete, or pack-layer override workflows
+  - authored edits to built-in modules still read as style-pack modules unless or until a richer copy-on-write library model is added
+## 2026-03-13 - Authored Module Browser Slice
+
+- Prompt alignment:
+  - `codex/prompts/10-LAUNCH-UNATTENDED-PRODUCT-RUN.md`
+  - thin `T-25` follow-through on copy-on-write reusable-library visibility
+- Task ids completed or materially advanced:
+  - advanced: `T-25`
+- Acceptance and workflow targets:
+  - let edited built-in reusable modules stop reading as untouched style-pack entries in the desktop browser
+  - keep the copy-on-write model session-local and undo-safe instead of inventing a broader library override system prematurely
+- Failing tests added first:
+  - expanded `desktop/src/documentInspector.spec.ts`
+  - expanded `desktop/src/desktopAcceptance.spec.ts`
+- Implementation changes:
+  - extended module-library source classification to support `authored` entries in `desktop/src/documentInspector.ts`
+  - repaired and completed authored-module browser state wiring in `desktop/src/main.ts`, including filter chips, source badges, document-load resets, and undo/redo snapshot restoration
+  - marked built-in reusable modules as session-authored when their metadata draft is applied without a `sourceAsset`
+- Validation commands run:
+  - `corepack pnpm --dir desktop typecheck`
+  - `corepack pnpm --dir desktop test`
+  - `corepack pnpm --dir desktop build`
+  - `cargo test --manifest-path desktop/src-tauri/Cargo.toml`
+- Results:
+  - desktop frontend is green at 8 Vitest files / 51 tests
+  - desktop build is green
+  - desktop Tauri Rust tests remain green at 38 tests
+  - the module browser can now isolate style-pack, imported, and session-authored reusable modules instead of collapsing authored built-ins back into the untouched library view
+- Remaining gaps and assumptions:
+  - this is still a session-level copy-on-write slice, not a persisted override manager with rename, delete, merge, or lock semantics
+  - imported modules remain imported after metadata edits because authored visibility is reserved for built-in modules without a `sourceAsset`
+
+## 2026-03-13 - Desktop Inspector Validation Slice
+
+- Prompt alignment:
+  - `codex/prompts/10-LAUNCH-UNATTENDED-PRODUCT-RUN.md`
+  - thin `AC-18` follow-through on desktop validation-state surfacing
+- Task ids completed or materially advanced:
+  - advanced: desktop validation-state UX coverage
+- Acceptance and workflow targets:
+  - surface selected-module validator issues directly in desktop inspector projections instead of only the flat report list
+  - preserve Rust-owned validation while exposing actionable `suggestedFix` data in the TypeScript shell
+- Failing tests added first:
+  - expanded `desktop/src/documentInspector.spec.ts`
+  - expanded `desktop/src/desktopAcceptance.spec.ts`
+- Implementation changes:
+  - extended `desktop/src/types.ts` so the desktop validation issue shape preserves optional `suggestedFix`
+  - added selected-module validation projection helpers in `desktop/src/documentInspector.ts`
+  - surfaced a compact inspector block for module-specific and project-level validation issues in `desktop/src/main.ts`
+  - added validation inspector styling in `desktop/src/styles.css`
+- Validation commands run:
+  - `corepack pnpm --dir desktop typecheck`
+  - `corepack pnpm --dir desktop test`
+  - `corepack pnpm --dir desktop build`
+  - `cargo test --manifest-path desktop/src-tauri/Cargo.toml`
+- Results:
+  - desktop frontend is green at 8 Vitest files / 53 tests
+  - desktop build is green
+  - desktop Tauri Rust tests remain green at 41 tests
+  - selected modules now surface module-specific issues, project-level blockers, and suggested fixes in inspector projections
+- Remaining gaps and assumptions:
+  - this is still a projection/render slice, not a native launched desktop smoke pass
+  - the flat validation panel still exists alongside the richer inspector detail because manual smoke `AC-19` remains open
+## 2026-03-13 - Desktop Transform Preview Slice
+
+- Prompt alignment:
+  - `codex/prompts/10-LAUNCH-UNATTENDED-PRODUCT-RUN.md`
+  - thin `AC-13` follow-through on broader desktop preview/apply coverage
+- Task ids completed or materially advanced:
+  - advanced: desktop preview/apply UX
+- Acceptance and workflow targets:
+  - stop routing transform inspector edits straight to apply when the Rust bridge already supports preview-with-diff
+  - extend the existing preview/apply/cancel UX without inventing a second command path
+- Failing tests added first:
+  - expanded `desktop/src/materialPreviewState.spec.ts`
+  - expanded `desktop/src/desktopAcceptance.spec.ts`
+- Implementation changes:
+  - generalized `desktop/src/materialPreviewState.ts` to cover both pending material and pending transform previews
+  - wired transform input changes through `preview_edit_command_command` in `desktop/src/main.ts`
+  - reused the preview card and apply/cancel affordance for transform edits while keeping pending values visible in inspector inputs
+- Validation commands run:
+  - `corepack pnpm --dir desktop typecheck`
+  - `corepack pnpm --dir desktop test`
+  - `corepack pnpm --dir desktop build`
+  - `cargo test --manifest-path desktop/src-tauri/Cargo.toml`
+- Results:
+  - desktop frontend is green at 8 Vitest files / 57 tests
+  - desktop build is green
+  - desktop Tauri Rust tests remain green at 41 tests
+  - transform edits now share the same preview/apply/cancel shell seam as material edits instead of applying immediately
+- Remaining gaps and assumptions:
+  - preview/apply is still not generalized across every structured edit family
+  - manual desktop smoke remains open and the viewport drag path still commits directly through its existing interaction seam
+## 2026-03-13 - Desktop Region Preview Slice
+
+- Prompt alignment:
+  - `codex/prompts/10-LAUNCH-UNATTENDED-PRODUCT-RUN.md`
+  - thin `AC-13` follow-through on broader desktop preview/apply coverage
+- Task ids completed or materially advanced:
+  - advanced: desktop preview/apply UX
+- Acceptance and workflow targets:
+  - stop routing region slider edits straight to apply when the Rust bridge already supports preview-with-diff
+  - keep the desktop preview model shared instead of creating a one-off region workflow
+- Failing tests added first:
+  - expanded `desktop/src/materialPreviewState.spec.ts`
+  - expanded `desktop/src/desktopAcceptance.spec.ts`
+- Implementation changes:
+  - extended `desktop/src/materialPreviewState.ts` with pending region preview support and slider-value resolution
+  - wired region slider changes through `preview_edit_command_command` in `desktop/src/main.ts`
+  - kept pending region values visible in the slider/value readout and reused the existing preview card apply/cancel seam
+- Validation commands run:
+  - `corepack pnpm --dir desktop typecheck`
+  - `corepack pnpm --dir desktop test`
+  - `corepack pnpm --dir desktop build`
+  - `cargo test --manifest-path desktop/src-tauri/Cargo.toml`
+- Results:
+  - desktop frontend is green at 8 Vitest files / 60 tests
+  - desktop build is green
+  - desktop Tauri Rust tests remain green at 41 tests
+  - region edits now share the preview/apply/cancel seam instead of applying immediately
+- Remaining gaps and assumptions:
+  - preview/apply is still not generalized across every structured edit family
+  - manual desktop smoke remains open and viewport drag interactions still commit through their existing path
+## 2026-03-13 - Desktop Rig Template Preview Slice
+
+- Prompt alignment:
+  - `codex/prompts/10-LAUNCH-UNATTENDED-PRODUCT-RUN.md`
+  - thin `AC-13` follow-through on broader desktop preview/apply coverage
+- Task ids completed or materially advanced:
+  - advanced: desktop preview/apply UX
+- Acceptance and workflow targets:
+  - stop routing rig-template selection straight to apply when the Rust bridge already supports preview-with-diff
+  - keep the preview state shared instead of creating a rig-only apply seam
+- Failing tests added first:
+  - expanded `desktop/src/materialPreviewState.spec.ts`
+  - expanded `desktop/src/desktopAcceptance.spec.ts`
+- Implementation changes:
+  - extended `desktop/src/materialPreviewState.ts` with pending rig-template preview support and select-value resolution
+  - wired rig-template selection through `preview_edit_command_command` in `desktop/src/main.ts`
+  - kept pending template values visible in the select and reused the existing preview card apply/cancel seam
+- Validation commands run:
+  - `corepack pnpm --dir desktop typecheck`
+  - `corepack pnpm --dir desktop test`
+  - `corepack pnpm --dir desktop build`
+  - `cargo test --manifest-path desktop/src-tauri/Cargo.toml`
+- Results:
+  - desktop frontend is green at 8 Vitest files / 63 tests
+  - desktop build is green
+  - desktop Tauri Rust tests remain green at 41 tests
+  - rig-template assignment now shares the preview/apply/cancel seam instead of applying immediately
+- Remaining gaps and assumptions:
+  - preview/apply is still not generalized across every structured edit family
+  - manual desktop smoke remains open and viewport drag interactions still commit through their existing path
+## 2026-03-13 - Desktop Socket Preview Slice
+
+- Prompt alignment:
+  - `codex/prompts/10-LAUNCH-UNATTENDED-PRODUCT-RUN.md`
+  - thin `AC-13` follow-through on broader desktop preview/apply coverage
+- Task ids completed or materially advanced:
+  - advanced: desktop preview/apply UX
+- Acceptance and workflow targets:
+  - stop routing socket attachment straight to apply when the Rust bridge already supports preview-with-diff
+  - finish wiring the rig-template and region shell paths through the existing shared preview seam instead of bypassing it in `main.ts`
+- Failing tests added first:
+  - expanded `desktop/src/materialPreviewState.spec.ts`
+  - expanded `desktop/src/desktopAcceptance.spec.ts`
+- Implementation changes:
+  - extended `desktop/src/materialPreviewState.ts` with pending socket preview support and visible-socket projection
+  - wired socket attachment through `preview_edit_command_command` in `desktop/src/main.ts`
+  - corrected the rig-template and region desktop shell event paths so they now use the existing shared preview seam
+  - surfaced preview cards for transform, region, rig-template, and socket previews while keeping pending socket attachments visible in the rig panel
+- Validation commands run:
+  - `corepack pnpm --dir desktop typecheck`
+  - `corepack pnpm --dir desktop test`
+  - `corepack pnpm --dir desktop build`
+  - `cargo test --manifest-path desktop/src-tauri/Cargo.toml`
+- Results:
+  - desktop frontend is green at 8 Vitest files / 66 tests
+  - desktop build is green
+  - desktop Tauri Rust tests remain green at 41 tests
+  - socket attachment now shares the preview/apply/cancel seam instead of applying immediately
+  - rig-template and region edits now actually route through the shared preview path in the desktop shell instead of only being modeled in helper state
+- Remaining gaps and assumptions:
+  - preview/apply is still not generalized across every structured edit family
+  - connector attachment and viewport drag interactions still commit through their existing direct paths
+  - manual desktop smoke remains open
+## 2026-03-13 - Desktop Connector Preview Slice
+
+- Prompt alignment:
+  - `codex/prompts/10-LAUNCH-UNATTENDED-PRODUCT-RUN.md`
+  - thin `AC-13` follow-through on broader desktop preview/apply coverage
+- Task ids completed or materially advanced:
+  - advanced: desktop preview/apply UX
+  - advanced: shared command-contract coverage
+- Acceptance and workflow targets:
+  - stop routing connector attachment selects straight to apply when the Rust bridge already supports preview-with-diff
+  - promote connector attach and clear into the shared `EditCommand` seam so preview/apply, domain diffs, and command summaries stay aligned
+- Failing tests added first:
+  - expanded `crates/polybash-domain/tests/command_apply.rs`
+  - expanded `desktop/src-tauri/src/lib.rs`
+  - expanded `desktop/src/materialPreviewState.spec.ts`
+  - expanded `desktop/src/desktopAcceptance.spec.ts`
+- Implementation changes:
+  - added `set_connector_attachment` and `clear_connector_attachment` variants to the shared Rust and TypeScript edit-command contracts
+  - extended domain apply/preview diff logic with connector attachment semantics and deterministic diff paths
+  - updated `crates/polybash-llm/src/lib.rs` and `crates/polybash-llm/tests/command_dsl.rs` so command summaries and preview-target summaries cover connector commands
+  - extended `desktop/src/materialPreviewState.ts` with pending connector preview support and connector-select value resolution
+  - wired connector attachment selects through `preview_edit_command_command` in `desktop/src/main.ts` and surfaced connector preview cards in the inspector
+- Validation commands run:
+  - `corepack pnpm --dir desktop typecheck`
+  - `corepack pnpm --dir desktop test`
+  - `corepack pnpm --dir desktop build`
+  - `cargo test --manifest-path desktop/src-tauri/Cargo.toml`
+  - `cargo fmt --check`
+  - `cargo test --workspace`
+- Results:
+  - desktop frontend is green at 8 Vitest files / 69 tests
+  - desktop build is green
+  - desktop Tauri Rust tests are green at 43 tests
+  - full Rust workspace is green
+  - connector attachment and clearing now share the preview/apply/cancel seam instead of applying immediately through the select path
+- Remaining gaps and assumptions:
+  - connector snap still commits through its existing direct path because it couples attachment and transform alignment
+  - preview/apply is still not generalized across every structured edit family
+  - manual desktop smoke remains open
+## 2026-03-13 - Reusable Module Duplication Slice
+
+- Prompt alignment:
+  - `codex/prompts/10-LAUNCH-UNATTENDED-PRODUCT-RUN.md`
+  - thin `T-25` follow-through on reusable-library management in the desktop browser
+- Task ids completed or materially advanced:
+  - advanced: `T-25`
+- Acceptance and workflow targets:
+  - let users fork an existing reusable module into a new authored library entry instead of only editing in place
+  - keep the slice on the current single-style-pack browser model rather than inventing multi-pack enable/disable state
+- Failing tests added first:
+  - expanded `desktop/src/moduleDraft.spec.ts`
+  - expanded `desktop/src/desktopAcceptance.spec.ts`
+- Implementation changes:
+  - added deterministic reusable-module duplication helpers in `desktop/src/moduleDraft.ts`
+  - surfaced `Duplicate as Authored` in the module browser preview inside `desktop/src/main.ts`
+  - wired duplicated module copies into existing authored-library state so the browser immediately treats them as authored entries
+- Validation commands run:
+  - `corepack pnpm --dir desktop typecheck`
+  - `corepack pnpm --dir desktop test`
+  - `corepack pnpm --dir desktop build`
+  - `cargo test --manifest-path desktop/src-tauri/Cargo.toml`
+- Results:
+  - desktop frontend is green at 8 Vitest files / 72 tests
+  - desktop build is green
+  - desktop Tauri Rust tests remain green at 43 tests
+  - the desktop browser can now duplicate a reusable module into a deterministic authored copy and immediately browse it as authored content
+- Remaining gaps and assumptions:
+  - this is still a thin authored-copy slice, not a fuller library manager with rename, delete, pack layering, or tagging
+  - duplicated reusable modules still inherit the current module metadata wholesale and rely on the existing metadata-draft flow for further edits
+## 2026-03-13 - Reusable Module Rename Slice
+
+- Prompt alignment:
+  - `codex/prompts/10-LAUNCH-UNATTENDED-PRODUCT-RUN.md`
+  - thin `T-25` follow-through on authored reusable-library management in the desktop browser
+- Task ids completed or materially advanced:
+  - advanced: `T-25`
+- Acceptance and workflow targets:
+  - let users rename authored reusable browser entries after duplication instead of being locked to deterministic `_copy_XX` ids
+  - keep the slice session-local, undo-safe, and scoped to the existing single-style-pack browser model
+- Failing tests added first:
+  - expanded `desktop/src/moduleDraft.spec.ts`
+  - expanded `desktop/src/desktopAcceptance.spec.ts`
+- Implementation changes:
+  - added reusable-module rename helpers in `desktop/src/moduleDraft.ts`, including placed-instance `moduleId` updates for authored copies already used in the project
+  - surfaced `Rename Authored Copy` in the module browser preview inside `desktop/src/main.ts`
+  - kept rename state on the existing authored-library and undo history seam instead of adding new persistence or pack-management state
+- Validation commands run:
+  - `corepack pnpm --dir desktop typecheck`
+  - `corepack pnpm --dir desktop test`
+  - `corepack pnpm --dir desktop build`
+  - `cargo test --manifest-path desktop/src-tauri/Cargo.toml`
+- Results:
+  - desktop frontend is green at 8 Vitest files / 74 tests
+  - desktop build is green
+  - desktop Tauri Rust tests remain green at 43 tests
+  - authored reusable browser entries can now be duplicated, renamed, and kept visible as authored content without leaving the current desktop shell workflow
+- Remaining gaps and assumptions:
+  - this is still a thin authored-library slice, not a fuller manager with delete, pack layering, tagging, or user-defined naming at duplicate time
+  - rename is intentionally limited to authored browser entries; untouched style-pack modules and imported modules still stay on their existing ids in the current browser flow
+
+## 2026-03-13 - Reusable Module Delete Slice
+
+- Prompt alignment:
+  - `codex/prompts/10-LAUNCH-UNATTENDED-PRODUCT-RUN.md`
+  - thin `T-25` follow-through on authored reusable-library management in the desktop browser
+- Task ids completed or materially advanced:
+  - advanced: `T-25`
+- Acceptance and workflow targets:
+  - let users delete authored reusable browser entries after duplication or rename instead of leaving the current library flow append-only
+  - keep the slice session-local, undo-safe, and conservative by limiting deletion to authored entries while pruning any placed project state that still references them
+- Failing tests added first:
+  - expanded `desktop/src/moduleDraft.spec.ts`
+  - expanded `desktop/src/desktopAcceptance.spec.ts`
+- Implementation changes:
+  - added reusable-module delete helpers in `desktop/src/moduleDraft.ts`, including pruning of placed module instances, dependent connector attachments, and targeted decal layers for deleted authored copies
+  - surfaced `Delete Authored Copy` in the module browser preview inside `desktop/src/main.ts`
+  - kept delete state on the existing authored-library and undo history seam instead of adding new persistence or pack-management state
+- Validation commands run:
+  - `corepack pnpm --dir desktop typecheck`
+  - `corepack pnpm --dir desktop test`
+  - `corepack pnpm --dir desktop build`
+  - `cargo test --manifest-path desktop/src-tauri/Cargo.toml`
+- Results:
+  - desktop frontend is green at 8 Vitest files / 75 tests
+  - desktop build is green
+  - desktop Tauri Rust tests remain green at 43 tests
+  - authored reusable browser entries can now be duplicated, renamed, deleted, and kept consistent with project state from the current desktop shell workflow
+- Remaining gaps and assumptions:
+  - this is still a thin authored-library slice, not a fuller manager with pack layering, tagging, drag ordering, or richer thumbnails
+  - delete is intentionally limited to authored browser entries; untouched style-pack modules and imported modules still stay on their existing library records in the current flow
+
+## 2026-03-13 - Reusable Module Named Duplicate Slice
+
+- Prompt alignment:
+  - `codex/prompts/10-LAUNCH-UNATTENDED-PRODUCT-RUN.md`
+  - thin `T-25` follow-through on authored reusable-library management in the desktop browser
+- Task ids completed or materially advanced:
+  - advanced: `T-25`
+- Acceptance and workflow targets:
+  - let users choose an authored module id at duplicate time instead of being forced to accept the deterministic `_copy_XX` suggestion
+  - keep deterministic fallback and collision rejection inside the same authored-library helper seam
+- Failing tests added first:
+  - expanded `desktop/src/moduleDraft.spec.ts`
+  - expanded `desktop/src/desktopAcceptance.spec.ts`
+- Implementation changes:
+  - added duplicate-id suggestion helpers plus explicit named-duplicate coverage in `desktop/src/moduleDraft.ts`
+  - updated `desktop/src/main.ts` so `Duplicate as Authored` prompts with the next deterministic suggestion but accepts a custom authored id
+  - kept duplicate naming on the existing authored-library, validation, and undo-safe browser state rather than adding a separate organizer model
+- Validation commands run:
+  - `corepack pnpm --dir desktop typecheck`
+  - `corepack pnpm --dir desktop test`
+  - `corepack pnpm --dir desktop build`
+  - `cargo test --manifest-path desktop/src-tauri/Cargo.toml`
+- Results:
+  - desktop frontend is green at 8 Vitest files / 77 tests
+  - desktop build is green
+  - desktop Tauri Rust tests remain green at 43 tests
+  - authored reusable browser entries can now be duplicated with either the deterministic suggestion or a custom id from the current desktop shell workflow
+- Remaining gaps and assumptions:
+  - this is still a thin authored-library slice, not a fuller manager with pack layering, tagging, drag ordering, or richer thumbnails
+  - duplicate naming still rejects collisions and does not yet provide richer validation affordances beyond the current prompt-and-error path
+
+## 2026-03-13 - Reusable Module Usage-Aware Browser Slice
+
+- Prompt alignment:
+  - `codex/prompts/10-LAUNCH-UNATTENDED-PRODUCT-RUN.md`
+  - thin `T-25` follow-through on reusable-library organizer visibility in the desktop browser
+- Task ids completed or materially advanced:
+  - advanced: `T-25`
+- Acceptance and workflow targets:
+  - let users distinguish reusable modules that are actually placed in the current project from browser entries that are only available in the library
+  - keep the slice projection-first and read-only rather than inventing a new persistence or organizer model
+- Failing tests added first:
+  - expanded `desktop/src/documentInspector.spec.ts`
+  - expanded `desktop/src/desktopAcceptance.spec.ts`
+- Implementation changes:
+  - added reusable-module placement counts plus placed-instance preview data in `desktop/src/documentInspector.ts`
+  - surfaced an `In Use` library filter and placement counts in `desktop/src/main.ts`
+  - added placed-instance badges to the selected library preview so browser state now shows whether a reusable module is currently instantiated in the project
+- Validation commands run:
+  - `corepack pnpm --dir desktop typecheck`
+  - `corepack pnpm --dir desktop test`
+  - `corepack pnpm --dir desktop build`
+  - `cargo test --manifest-path desktop/src-tauri/Cargo.toml`
+- Results:
+  - desktop frontend is green at 8 Vitest files / 77 tests
+  - desktop build is green
+  - desktop Tauri Rust tests remain green at 43 tests
+  - the module browser can now filter reusable entries by `In Use` and show which placed instances currently consume a selected reusable module
+- Remaining gaps and assumptions:
+  - this is still a thin organizer slice, not a fuller library manager with search, tags, pack layering, drag ordering, or richer thumbnails
+  - usage awareness is project-local and count-based; it does not yet expose richer dependency navigation or cross-pack management
+## 2026-03-13 - Reusable Module Browser Search Slice
+
+- Prompt alignment:
+  - `codex/prompts/10-LAUNCH-UNATTENDED-PRODUCT-RUN.md`
+  - thin `T-25` follow-through on reusable-library organizer discoverability in the desktop browser
+- Task ids completed or materially advanced:
+  - advanced: `T-25`
+- Acceptance and workflow targets:
+  - let users find reusable modules by text instead of relying only on source and usage filter chips
+  - keep the slice projection-first and browser-local rather than inventing a new persistence or organizer model
+- Failing tests added first:
+  - expanded `desktop/src/documentInspector.spec.ts`
+  - expanded `desktop/src/desktopAcceptance.spec.ts`
+- Implementation changes:
+  - added `searchModuleLibrary` plus reusable-library search text projection in `desktop/src/documentInspector.ts`
+  - surfaced a reusable-library search input in `desktop/src/main.ts` and combined it with the existing source and `In Use` browser filters
+  - kept search matching narrow and deterministic across module id, asset/source metadata, and current usage labels
+- Validation commands run:
+  - `corepack pnpm --dir desktop typecheck`
+  - `corepack pnpm --dir desktop test`
+  - `corepack pnpm --dir desktop build`
+  - `cargo test --manifest-path desktop/src-tauri/Cargo.toml`
+- Results:
+  - desktop frontend is green at 8 Vitest files / 79 tests
+  - desktop build is green
+  - desktop Tauri Rust tests remain green at 43 tests
+  - the module browser can now search reusable entries by module id, source, or current usage while preserving the existing authored/imported/in-use organizer flow
+- Remaining gaps and assumptions:
+  - this is still a thin organizer slice, not a fuller library manager with tags, pack layering, drag ordering, or richer thumbnails
+  - search is intentionally substring-based and projection-only; it does not yet add fuzzy ranking, saved queries, or cross-pack scope
+## 2026-03-13 - Reusable Module Metadata Search Slice
+
+- Prompt alignment:
+  - `codex/prompts/10-LAUNCH-UNATTENDED-PRODUCT-RUN.md`
+  - thin `T-25` follow-through on reusable-library organizer discoverability in the desktop browser
+- Task ids completed or materially advanced:
+  - advanced: `T-25`
+- Acceptance and workflow targets:
+  - let users search reusable modules by the metadata they actually remember from authoring or placement, not only by module id or source labels
+  - keep the slice projection-first and browser-local rather than inventing a new persistence or organizer model
+- Failing tests added first:
+  - expanded `desktop/src/documentInspector.spec.ts`
+  - expanded `desktop/src/desktopAcceptance.spec.ts`
+- Implementation changes:
+  - extended `searchModuleLibrary` indexing in `desktop/src/documentInspector.ts` so search now includes connector ids and kinds, region ids, material zones, placed instance ids, and imported source-asset paths without changing the public library-entry shape
+  - updated the browser search affordance text in `desktop/src/main.ts` so the module library advertises metadata-oriented search instead of only flat source/usage labels
+  - kept the search path deterministic and substring-based on the existing projection seam rather than adding a new fuzzy-search subsystem
+- Validation commands run:
+  - `corepack pnpm --dir desktop typecheck`
+  - `corepack pnpm --dir desktop test`
+  - `corepack pnpm --dir desktop build`
+  - `cargo test --manifest-path desktop/src-tauri/Cargo.toml`
+- Results:
+  - desktop frontend is green at 8 Vitest files / 79 tests
+  - desktop build is green
+  - desktop Tauri Rust tests remain green at 43 tests
+  - the module browser can now find reusable entries by connector metadata, material-zone names, imported source-asset filenames, and placed instance ids in addition to module id, source, and current usage
+- Remaining gaps and assumptions:
+  - this is still a thin organizer slice, not a fuller library manager with tags, pack layering, drag ordering, or richer thumbnails
+  - search remains deterministic substring matching; it does not yet provide fuzzy ranking, grouped facets, or scene-aware placement suggestions
+## 2026-03-13 - Module Browser Placement Guidance Slice
+
+- Prompt alignment:
+  - `codex/prompts/10-LAUNCH-UNATTENDED-PRODUCT-RUN.md`
+  - thin `T-19` follow-through on making module placement understandable before trial-and-error add/snap steps
+- Task ids completed or materially advanced:
+  - advanced: `T-19`
+- Acceptance and workflow targets:
+  - let users inspect live compatible scene targets from the module browser preview before they place a reusable module
+  - keep the slice desktop-local and projection-first instead of adding a new Rust contract or multi-step add-and-snap orchestration path
+- Failing tests added first:
+  - expanded `desktop/src/documentInspector.spec.ts`
+  - expanded `desktop/src/desktopAcceptance.spec.ts`
+- Implementation changes:
+  - extended `buildModuleLibraryPreview` in `desktop/src/documentInspector.ts` with deterministic `suggestedPlacements` derived from the current scene and the existing connector compatibility rules
+  - surfaced suggested placement badges in the module browser preview inside `desktop/src/main.ts`
+  - kept the logic on the existing desktop projection seam and reused the current connector taxonomy rather than inventing a second snap heuristic path
+- Validation commands run:
+  - `corepack pnpm --dir desktop typecheck`
+  - `corepack pnpm --dir desktop test`
+  - `corepack pnpm --dir desktop build`
+  - `cargo test --manifest-path desktop/src-tauri/Cargo.toml`
+- Results:
+  - desktop frontend is green at 8 Vitest files / 79 tests
+  - desktop build is green
+  - desktop Tauri Rust tests remain green at 43 tests
+  - the module browser can now show live compatible placement targets such as `neck_socket -> torso_01::neck` or `grip -> arm_r_01::hand_socket_r` before a module is added to the project
+- Remaining gaps and assumptions:
+  - this is still guidance only; there is not yet a one-click add-and-snap flow from the preview card
+  - placement suggestions are deterministic and taxonomy-driven, not ranked by viewport context, history, or richer user intent
+## 2026-03-13 - Module Browser Add-And-Snap Slice
+
+- Prompt alignment:
+  - `codex/prompts/10-LAUNCH-UNATTENDED-PRODUCT-RUN.md`
+  - thin `T-19` follow-through on making module placement understandable and actionable without trial-and-error browser-to-inspector hopping
+- Task ids completed or materially advanced:
+  - advanced: `T-19`
+- Acceptance and workflow targets:
+  - let users place a reusable module directly from the browser preview against the default suggested live target
+  - keep the action undo-safe and reuse the existing desktop add-module plus snap-module command seams instead of adding new Rust contracts
+- Failing tests added first:
+  - expanded `desktop/src/documentInspector.spec.ts`
+  - expanded `desktop/src/desktopAcceptance.spec.ts`
+- Implementation changes:
+  - added `resolvePrimarySuggestedPlacement` in `desktop/src/documentInspector.ts` as a deterministic helper over the preview projection
+  - surfaced `Add and Snap to ...` in the browser preview inside `desktop/src/main.ts`
+  - implemented a combined `addModuleAndSnap` desktop action that uses the existing add-module and snap-module invoke commands inside one undo-safe action label
+- Validation commands run:
+  - `corepack pnpm --dir desktop typecheck`
+  - `corepack pnpm --dir desktop test`
+  - `corepack pnpm --dir desktop build`
+  - `cargo test --manifest-path desktop/src-tauri/Cargo.toml`
+- Results:
+  - desktop frontend is green at 8 Vitest files / 79 tests
+  - desktop build is green
+  - desktop Tauri Rust tests remain green at 43 tests
+  - the browser preview can now place and snap a reusable module to its default suggested live target in one explicit action without forcing a separate add step first
+- Remaining gaps and assumptions:
+  - the new action only uses the first deterministic suggestion; there is not yet a richer target picker or ranked placement chooser in the preview
+  - the button still relies on the existing backend snap semantics rather than a richer viewport-first snap workflow
+## 2026-03-13 - Module Browser Multi-Target Add-And-Snap Slice
+
+- Prompt alignment:
+  - `codex/prompts/10-LAUNCH-UNATTENDED-PRODUCT-RUN.md`
+  - thin `T-19` follow-through on making browser placement actions explicit for every suggested live target instead of only the default one
+- Task ids completed or materially advanced:
+  - advanced: `T-19`
+- Acceptance and workflow targets:
+  - let users choose from the full suggested live target list directly in the module browser preview
+  - keep the action list on the existing desktop projection and add/snap invoke seams rather than inventing a richer target-picker subsystem
+- Failing tests added first:
+  - expanded `desktop/src/documentInspector.spec.ts`
+  - expanded `desktop/src/desktopAcceptance.spec.ts`
+- Implementation changes:
+  - added `SuggestedPlacementAction` plus `buildSuggestedPlacementActions` in `desktop/src/documentInspector.ts` so the browser action list is driven from a deterministic, test-covered projection helper
+  - updated `desktop/src/main.ts` to render one `Add and Snap` button per suggested live target instead of only the first default target
+  - kept the existing combined `addModuleAndSnap` action and reused the same button dataset/event path for each suggested target
+- Validation commands run:
+  - `corepack pnpm --dir desktop typecheck`
+  - `corepack pnpm --dir desktop test`
+  - `corepack pnpm --dir desktop build`
+  - `cargo test --manifest-path desktop/src-tauri/Cargo.toml`
+- Results:
+  - desktop frontend is green at 8 Vitest files / 79 tests
+  - desktop build is green
+  - desktop Tauri Rust tests remain green at 43 tests
+  - the browser preview now exposes the full compatible target list as explicit `Add and Snap to ...` actions instead of forcing users through only the first deterministic suggestion
+- Remaining gaps and assumptions:
+  - the action list is still flat and deterministic; there is not yet a richer grouped target picker, ranking model, or viewport-first placement chooser
+  - this still relies on existing backend snap semantics after placement rather than a richer interactive gizmo or target preview flow
+## 2026-03-13 - Module Browser Placement Action Grouping Slice
+
+- Prompt alignment:
+  - `codex/prompts/10-LAUNCH-UNATTENDED-PRODUCT-RUN.md`
+  - thin `T-19` follow-through on making browser placement actions easier to scan for multi-connector modules
+- Task ids completed or materially advanced:
+  - advanced: `T-19`
+- Acceptance and workflow targets:
+  - stop presenting multi-target placement actions as one flat list when a reusable module exposes multiple local connectors
+  - keep grouping logic projection-only and reuse the existing add-and-snap event path instead of adding a new picker subsystem
+- Failing tests added first:
+  - expanded `desktop/src/documentInspector.spec.ts`
+  - expanded `desktop/src/desktopAcceptance.spec.ts`
+- Implementation changes:
+  - added `SuggestedPlacementGroup` plus `buildSuggestedPlacementGroups` in `desktop/src/documentInspector.ts`
+  - updated `desktop/src/main.ts` so suggested placement actions render in local-connector groups rather than as a flat button strip
+  - kept action semantics unchanged: every grouped button still routes through the same undo-safe combined add-and-snap path
+- Validation commands run:
+  - `corepack pnpm --dir desktop typecheck`
+  - `corepack pnpm --dir desktop test`
+  - `corepack pnpm --dir desktop build`
+  - `cargo test --manifest-path desktop/src-tauri/Cargo.toml`
+- Results:
+  - desktop frontend is green at 8 Vitest files / 79 tests
+  - desktop build is green
+  - desktop Tauri Rust tests remain green at 43 tests
+  - multi-target browser placement actions are now grouped by local connector, which makes the preview easier to scan for modules with more than one compatible snap path
+- Remaining gaps and assumptions:
+  - grouping is still deterministic and flat inside each connector section; there is not yet richer ranking, collapsing, or viewport-context prioritization
+  - this is still browser-first guidance layered on top of existing backend snap semantics, not a viewport-first placement workflow
+
+## 2026-03-13 - Module Browser Placement Recommendation And Fallback Slice
+
+- Prompt alignment:
+  - `codex/prompts/10-LAUNCH-UNATTENDED-PRODUCT-RUN.md`
+  - thin `T-19` follow-through on making browser placement decisions clearer without adding a new snap subsystem
+- Task ids completed or materially advanced:
+  - advanced: `T-19`
+- Acceptance and workflow targets:
+  - make the ranked primary suggested placement visible as an explicit browser CTA instead of leaving it as hidden ordering
+  - keep manual fallback understandable by naming the unsnapped add path directly in the preview card
+- Failing tests added first:
+  - expanded `desktop/src/documentInspector.spec.ts`
+  - expanded `desktop/src/desktopAcceptance.spec.ts`
+- Implementation changes:
+  - added `buildModuleLibraryAddActionLabel`, `buildModuleLibraryAddActionHint`, and `resolvePrimarySuggestedPlacementAction` in `desktop/src/documentInspector.ts`
+  - updated `desktop/src/main.ts` so the browser preview now labels the manual path as `Add Without Snapping` and surfaces a `Recommended: Add and Snap to ...` CTA above the grouped target list
+  - kept the underlying placement semantics unchanged by reusing the existing combined add-and-snap bridge action
+- Validation commands run:
+  - `corepack pnpm --dir desktop typecheck`
+  - `corepack pnpm --dir desktop test`
+  - `corepack pnpm --dir desktop build`
+  - `cargo test --manifest-path desktop/src-tauri/Cargo.toml`
+- Results:
+  - desktop frontend is green at 8 Vitest files / 79 tests
+  - desktop build is green
+  - desktop Tauri Rust tests remain green at 43 tests
+  - the browser preview now exposes both a named manual fallback and a visible ranked recommendation, which makes placement decisions clearer without forcing trial-and-error
+- Remaining gaps and assumptions:
+  - the recommendation is still deterministic and scene-state-driven; there is not yet a richer ranked chooser or viewport-context scoring model
+  - this is still browser-first guidance layered on top of existing backend snap semantics, not a viewport-first placement workflow
+
+## 2026-03-13 - Module Browser Placement Alternative Target Slice
+
+- Prompt alignment:
+  - `codex/prompts/10-LAUNCH-UNATTENDED-PRODUCT-RUN.md`
+  - thin `T-19` follow-through on reducing repeated browser placement actions after the recommended CTA landed
+- Task ids completed or materially advanced:
+  - advanced: `T-19`
+- Acceptance and workflow targets:
+  - make the recommended placement CTA own the top-ranked target instead of repeating it in the grouped target list
+  - keep grouped browser actions focused on remaining alternatives so placement choices are easier to scan
+- Failing tests added first:
+  - expanded `desktop/src/documentInspector.spec.ts`
+  - expanded `desktop/src/desktopAcceptance.spec.ts`
+- Implementation changes:
+  - updated `buildSuggestedPlacementGroups` in `desktop/src/documentInspector.ts` so connector-grouped actions now exclude the primary ranked suggestion and only project alternative targets
+  - kept the recommended CTA and manual fallback copy unchanged in `desktop/src/main.ts`, so the UI now naturally renders one primary suggestion plus alternative actions without duplicate buttons
+  - restored the authored-browser coverage that shares the same projection seam after tightening the grouped-action expectations
+- Validation commands run:
+  - `corepack pnpm --dir desktop typecheck`
+  - `corepack pnpm --dir desktop test`
+  - `corepack pnpm --dir desktop build`
+  - `cargo test --manifest-path desktop/src-tauri/Cargo.toml`
+- Results:
+  - desktop frontend is green at 8 Vitest files / 79 tests
+  - desktop build is green
+  - desktop Tauri Rust tests remain green at 43 tests
+  - the browser preview now presents placement choices as one recommended snap action plus grouped alternatives, which removes duplicate top-target buttons from the preview card
+- Remaining gaps and assumptions:
+  - alternative grouping is still deterministic and scene-state-driven; there is not yet a richer ranked chooser, collapse state, or viewport-context scoring model
+  - this is still browser-first guidance layered on top of existing backend snap semantics, not a viewport-first placement workflow
+
+## 2026-03-13 - Module Browser Placement Request Seam Slice
+
+- Prompt alignment:
+  - `codex/prompts/10-LAUNCH-UNATTENDED-PRODUCT-RUN.md`
+  - thin `T-19` follow-through on making the recommended browser placement action traceable to a concrete bridge payload and outcome
+- Task ids completed or materially advanced:
+  - advanced: `T-19`
+- Acceptance and workflow targets:
+  - expose a pure request-builder seam for recommended and alternative browser add-and-snap actions
+  - add bridge-level evidence that the canonical weapon recommendation really snaps onto the right-hand target through command dispatch
+- Failing tests added first:
+  - expanded `desktop/src/documentInspector.spec.ts`
+  - expanded `desktop/src/desktopAcceptance.spec.ts`
+  - expanded `desktop/src-tauri/src/lib.rs`
+- Implementation changes:
+  - added `AddModuleAndSnapRequest`, `buildAddModuleAndSnapRequest`, and `buildPrimarySuggestedPlacementRequest` in `desktop/src/documentInspector.ts`
+  - updated `desktop/src/main.ts` so the browser preview now derives both the recommended CTA and grouped alternative button payloads from the same pure request-builder seam
+  - added `recommended_weapon_browser_target_round_trips_through_command_dispatch` in `desktop/src-tauri/src/lib.rs` to prove the right-hand recommendation lands on the expected canonical snap target
+- Validation commands run:
+  - `corepack pnpm --dir desktop typecheck`
+  - `corepack pnpm --dir desktop test`
+  - `corepack pnpm --dir desktop build`
+  - `cargo test --manifest-path desktop/src-tauri/Cargo.toml`
+- Results:
+  - desktop frontend is green at 8 Vitest files / 79 tests
+  - desktop build is green
+  - desktop Tauri Rust tests are green at 44 tests
+  - the recommended browser placement path is now backed by an explicit request object seam and a passing bridge-level outcome test instead of only UI copy and ordering
+- Remaining gaps and assumptions:
+  - browser placement still depends on deterministic scene-state ranking rather than viewport-aware intent scoring or a richer target picker
+  - the request seam stays desktop-local; it does not introduce a new combined Rust command beyond the existing add and snap bridge calls
+
+## 2026-03-14 - Combined Browser Add And Snap Bridge Slice
+
+- Prompt alignment:
+  - `codex/prompts/10-LAUNCH-UNATTENDED-PRODUCT-RUN.md`
+  - thin `T-19` follow-through on collapsing browser placement orchestration into one bridge command instead of separate add and snap calls from the shell
+- Task ids completed or materially advanced:
+  - advanced: `T-19`
+- Acceptance and workflow targets:
+  - keep the browser recommended placement path traceable through one explicit backend command rather than two shell-side invokes
+  - preserve the existing placement behavior while reducing orchestration fragility in the desktop shell
+- Failing tests added first:
+  - updated `desktop/src-tauri/src/lib.rs` so the recommended weapon browser path expects a combined command-dispatch flow
+- Implementation changes:
+  - added `add_module_and_snap` plus `add_module_and_snap_command` in `desktop/src-tauri/src/lib.rs`
+  - registered `polybash_desktop::commands::add_module_and_snap_command` in `desktop/src-tauri/src/main.rs`
+  - updated `desktop/src/main.ts` so `addModuleAndSnap(...)` now calls the combined bridge command and only resolves the newly added instance id for selection after the backend returns
+- Validation commands run:
+  - `corepack pnpm --dir desktop typecheck`
+  - `corepack pnpm --dir desktop test`
+  - `corepack pnpm --dir desktop build`
+  - `cargo test --manifest-path desktop/src-tauri/Cargo.toml`
+- Results:
+  - desktop frontend is green at 8 Vitest files / 79 tests
+  - desktop build is green
+  - desktop Tauri Rust tests are green at 44 tests
+  - browser add-and-snap placement now runs through one backend command while preserving the existing right-hand recommendation outcome for the canonical weapon target
+- Remaining gaps and assumptions:
+  - this is still a browser-first placement flow on deterministic ranking; it does not add a richer target picker or viewport-aware snap intent
+  - the desktop shell still resolves the newly added instance id by deterministic append order after the combined command returns
+
+## 2026-03-14 - Browser Alternative Summary Slice
+
+- Prompt alignment:
+  - `codex/prompts/10-LAUNCH-UNATTENDED-PRODUCT-RUN.md`
+  - thin `T-19` follow-through on making the remaining alternative snap targets easier to scan after the recommended CTA and combined bridge command landed
+- Task ids completed or materially advanced:
+  - advanced: `T-19`
+- Acceptance and workflow targets:
+  - make the browser preview read as one recommendation plus a quantified set of alternatives instead of a silent extra button block
+  - keep the slice projection-first and reuse the existing grouped alternative actions without adding a richer picker subsystem yet
+- Failing tests added first:
+  - expanded `desktop/src/documentInspector.spec.ts`
+  - expanded `desktop/src/desktopAcceptance.spec.ts`
+- Implementation changes:
+  - added `SuggestedPlacementAlternativeSummary` plus `buildSuggestedPlacementAlternativeSummary` in `desktop/src/documentInspector.ts`
+  - updated `desktop/src/main.ts` so browser previews now render an alternative-target summary above the grouped alternative buttons when more than one live snap option exists
+  - kept the recommended CTA, manual fallback copy, and grouped alternative buttons unchanged underneath that new summary line
+- Validation commands run:
+  - `corepack pnpm --dir desktop typecheck`
+  - `corepack pnpm --dir desktop test`
+  - `corepack pnpm --dir desktop build`
+  - `cargo test --manifest-path desktop/src-tauri/Cargo.toml`
+- Results:
+  - desktop frontend is green at 8 Vitest files / 79 tests
+  - desktop build is green
+  - desktop Tauri Rust tests are green at 44 tests
+  - browser placement previews now make the remaining choice set explicit, for example `1 alternative target across 1 connector`, instead of forcing users to infer that from grouped buttons alone
+- Remaining gaps and assumptions:
+  - the summary is deterministic and count-based; it does not rank alternatives beyond the existing primary-vs-secondary split or add collapse state
+  - this is still browser-first placement guidance rather than a viewport-first snap workflow
+
+## 2026-03-14 - Browser Selected Instance Feedback Slice
+
+- Prompt alignment:
+  - `codex/prompts/10-LAUNCH-UNATTENDED-PRODUCT-RUN.md`
+  - thin `T-19` follow-through on making post-placement browser feedback explicit when the previewed reusable module is the currently selected scene module
+- Task ids completed or materially advanced:
+  - advanced: `T-19`
+- Acceptance and workflow targets:
+  - surface the currently selected placed instance directly inside the matching reusable-module preview instead of leaving that feedback implicit in scene selection and usage counts
+  - keep the slice projection-first and reuse the existing selected-module and library-preview seams
+- Failing tests added first:
+  - expanded `desktop/src/documentInspector.spec.ts`
+  - expanded `desktop/src/desktopAcceptance.spec.ts`
+- Implementation changes:
+  - added `buildModuleLibrarySelectionFeedback` in `desktop/src/documentInspector.ts`
+  - updated `desktop/src/main.ts` so the browser preview now renders `Selected in scene: ...` when the selected scene instance belongs to the same reusable module currently open in the browser preview
+  - added multi-placement coverage so repeated module placements now surface feedback like `Selected in scene: weapon_02 (2 placed)`
+- Validation commands run:
+  - `corepack pnpm --dir desktop typecheck`
+  - `corepack pnpm --dir desktop test`
+  - `corepack pnpm --dir desktop build`
+  - `cargo test --manifest-path desktop/src-tauri/Cargo.toml`
+- Results:
+  - desktop frontend is green at 8 Vitest files / 80 tests
+  - desktop build is green
+  - desktop Tauri Rust tests are green at 44 tests
+  - browser previews now give explicit post-placement feedback about which placed instance is currently selected in the scene for that reusable module
+- Remaining gaps and assumptions:
+  - this feedback is still selection-driven and text-only; it does not add richer browser thumbnails, placement history, or viewport-linked highlighting from the preview card
+  - placement outcomes still surface through the existing document refresh path rather than a dedicated browser event log
+
+## 2026-03-14 - Browser Selected Instance Count Feedback Slice
+
+- Prompt alignment:
+  - `codex/prompts/10-LAUNCH-UNATTENDED-PRODUCT-RUN.md`
+  - thin `T-19` follow-through on making post-placement browser feedback more explicit for repeated reusable-module placements
+- Task ids completed or materially advanced:
+  - advanced: `T-19`
+- Acceptance and workflow targets:
+  - show which placed scene instance is currently selected for the previewed reusable module
+  - include repeated-placement context in that feedback when more than one instance of the reusable module exists in the project
+- Failing tests added first:
+  - expanded `desktop/src/documentInspector.spec.ts`
+  - expanded `desktop/src/desktopAcceptance.spec.ts`
+- Implementation changes:
+  - added `buildModuleLibrarySelectionFeedback` in `desktop/src/documentInspector.ts`
+  - updated `desktop/src/main.ts` so the browser preview now renders `Selected in scene: ...` under the placement hint when the previewed reusable module matches the current scene selection
+  - added repeated-placement coverage so the preview can surface feedback like `Selected in scene: weapon_02 (2 placed)` for duplicated placements of the same reusable module
+- Validation commands run:
+  - `corepack pnpm --dir desktop typecheck`
+  - `corepack pnpm --dir desktop test`
+  - `corepack pnpm --dir desktop build`
+  - `cargo test --manifest-path desktop/src-tauri/Cargo.toml`
+- Results:
+  - desktop frontend is green at 8 Vitest files / 80 tests
+  - desktop build is green
+  - desktop Tauri Rust tests are green at 44 tests
+  - the browser preview now makes post-placement selection state explicit instead of forcing users to infer it from changed library counts or scene selection alone
+- Remaining gaps and assumptions:
+  - the feedback remains text-only and selection-driven; it does not add preview-linked viewport highlighting, thumbnails, or placement-history timeline UI
+  - the slice stays entirely on existing desktop projection state and does not introduce new backend placement event contracts
+## 2026-03-14 - Wave 1 T-21 Viewport Guide Interaction And T-26 Boundary Closure
+
+- Prompt alignment:
+  - `codex/prompts/10-LAUNCH-UNATTENDED-PRODUCT-RUN.md`
+  - Wave 1 focused on the biggest open usability blocker first (`T-21`), with a disjoint content-pipeline truthfulness closure for `T-26`
+- Task ids completed or materially advanced:
+  - completed: `T-21`
+  - completed: `T-26`
+  - advanced: `T-23`
+  - advanced: `T-24`
+- Acceptance and workflow targets:
+  - remove hidden modifier-key dependence from the selected-module transform flow by making visible guides the transform entry point
+  - make the Blender-owned UV/material boundary explicit as the intended metadata-first import contract rather than a vague limitation
+- Failing tests added first:
+  - added `desktop/src/viewportController.spec.ts`
+  - no new failing test was needed for `T-26`; closure was based on already-green contract and desktop bridge evidence in `crates/polybash-contracts/tests/*.rs` and `desktop/src-tauri/src/lib.rs`
+- Implementation changes:
+  - added `resolveViewportPointerTarget` and guide-hit metadata in `desktop/src/viewportController.ts`
+  - wired visible translate/scale/rotate guides into the viewport pointer path so scale and rotate no longer require hidden `Shift` / `Alt` drags
+  - kept module-drag translate as the fallback path for the selected module
+  - updated the viewport hint copy in `desktop/src/main.ts` and the user-facing README so the shell describes visible guides instead of keyboard secrets
+  - updated gap and acceptance docs to record the explicit Blender-owned UV/material boundary and the new guide-driven transform slice
+- Validation commands run:
+  - `corepack pnpm --dir desktop test -- viewportController.spec.ts`
+  - `corepack pnpm --dir desktop typecheck`
+  - `corepack pnpm --dir desktop test`
+  - `corepack pnpm --dir desktop build`
+  - `cargo test --manifest-path desktop/src-tauri/Cargo.toml`
+- Results:
+  - desktop frontend is green at 9 Vitest files / 83 tests
+  - desktop build remains green
+  - desktop Tauri Rust tests remain green at 44 tests
+  - the selected-module viewport transform flow is now discoverable from visible guides instead of hidden modifier keys
+  - the UV/material import boundary is now explicitly documented as a Blender-owned seam backed by existing contract and bridge tests
+- Remaining gaps and assumptions:
+  - `T-22` remains open because snap targets and connector markers are still informative rather than a fuller viewport-first snap workflow
+  - the current gizmo slice is still narrow to the selected module rather than a fuller multi-axis tool palette
+  - `T-25` remains open because reusable-library management is still only a thin save/reload plus duplicate/rename/delete/search baseline

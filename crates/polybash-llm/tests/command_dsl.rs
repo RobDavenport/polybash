@@ -32,6 +32,35 @@ fn valid_command_fixture_summarizes_to_structured_lines() {
 }
 
 #[test]
+fn connector_commands_summarize_to_structured_lines_and_preview_targets() {
+    let commands = parse_commands_str(
+        r#"[
+            {"op":"set_connector_attachment","instanceId":"arm_l_01","localConnector":"hand_socket_l","targetInstanceId":"weapon_01","targetConnector":"grip"},
+            {"op":"clear_connector_attachment","instanceId":"torso_01","localConnector":"neck"}
+        ]"#,
+    )
+    .expect("connector commands should parse");
+
+    let summaries = summarize_commands(&commands);
+    let preview_targets = summarize_command_preview_targets(&commands);
+
+    assert_eq!(
+        summaries,
+        vec![
+            "set_connector_attachment arm_l_01 hand_socket_l weapon_01 grip",
+            "clear_connector_attachment torso_01 neck",
+        ]
+    );
+    assert_eq!(
+        preview_targets,
+        vec![
+            "preview arm_l_01 modules.arm_l_01.connector_attachments.hand_socket_l",
+            "preview torso_01 modules.torso_01.connector_attachments.neck",
+        ]
+    );
+}
+
+#[test]
 fn invalid_command_fixture_is_rejected() {
     let error = parse_commands_str(include_str!(
         "../../../fixtures/commands/invalid/unknown_op.json"
